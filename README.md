@@ -1,3 +1,13 @@
+---
+title: NanoLogoPro
+emoji: 🚗
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+app_port: 8000
+---
+
 # 🚗 NanoLogoPro: AI Car Brand Classifier
 
 A Computer Vision web application that identifies car brands from images using **Bag of Visual Words (BoVW)** and **Machine Learning (SVM)**.
