@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+*.egg-info/
+
+# Data (Do not upload raw images)
+data/
+
+# Models (We WANT to track these for deployment)
+# !models/*.pkl  <-- verifying we are NOT ignoring these
+
+# IDE settings
+.vscode/
+.idea/

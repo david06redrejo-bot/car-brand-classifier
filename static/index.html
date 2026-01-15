@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NanoBanana Pro - Car Brand Classifier</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Orbitron:wght@400;700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #050505;
+            --bg-panel: rgba(20, 20, 20, 0.7);
+            --accent-color: #00f3ff;
+            /* Electric Cyan */
+            --accent-glow: rgba(0, 243, 255, 0.4);
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --success-color: #00ff9d;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--bg-dark);
+            background-image:
+                radial-gradient(circle at 10% 20%, rgba(0, 243, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(255, 0, 100, 0.05) 0%, transparent 40%),
+                url('https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=2560&auto=format&fit=crop');
+            /* Subtle luxury car bg */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Dark overlay to ensure readability */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 5, 5, 0.85);
+            z-index: -1;
+        }
+
+        .glass-container {
+            width: 100%;
+            max-width: 500px;
+            padding: 3rem 2rem;
+            background: var(--bg-panel);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .glass-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -50%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+            transform: skewX(-25deg);
+            pointer-events: none;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #fff 0%, #a5a5a5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+        }
+
+        .subtitle {
+            color: var(--accent-color);
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 2.5rem;
+            font-weight: 600;
+        }
+
+        /* Upload Area */
+        .upload-zone {
+            position: relative;
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 3rem 1.5rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.02);
+            overflow: hidden;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--accent-color);
+            background: rgba(0, 243, 255, 0.05);
+            box-shadow: 0 0 30px var(--accent-glow) inset;
+            transform: scale(1.02);
+        }
+
+        .upload-content {
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .upload-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 0 10px rgba(0, 243, 255, 0.3));
+        }
+
+        .upload-text {
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .browse-link {
+            color: var(--text-main);
+            font-weight: 600;
+            text-decoration: none;
+            border-bottom: 1px solid var(--accent-color);
+        }
+
+        /* Image Preview state */
+        .preview-wrapper {
+            display: none;
+            position: relative;
+            width: 100%;
+            height: 250px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--accent-color);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .preview-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            backdrop-filter: blur(4px);
+        }
+
+        .remove-btn:hover {
+            background: #ff3333;
+            transform: rotate(90deg);
+        }
+
+        /* Loading State */
+        .loader-container {
+            display: none;
+            margin: 2rem 0;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .speedometer {
+            width: 60px;
+            height: 30px;
+            /* Half circle */
+            border-top-left-radius: 60px;
+            border-top-right-radius: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .speedometer::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            width: 2px;
+            height: 24px;
+            background: var(--accent-color);
+            transform-origin: top center;
+            animation: gauge 1s ease-in-out infinite alternate;
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        @keyframes gauge {
+            from {
+                transform: translate(-50%, -100%) rotate(-70deg);
+            }
+
+            to {
+                transform: translate(-50%, -100%) rotate(70deg);
+            }
+        }
+
+        .loading-text {
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Result State */
+        .result-panel {
+            display: none;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+            animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .detected-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+        }
+
+        .brand-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--text-main);
+            text-transform: uppercase;
+            line-height: 1;
+            margin-bottom: 1rem;
+            background: linear-gradient(180deg, #fff 0%, #b8b8b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.2));
+        }
+
+        .confidence-bar-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 0.5rem;
+        }
+
+        .confidence-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-color), #00aaff);
+            width: 0%;
+            box-shadow: 0 0 15px var(--accent-color);
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .confidence-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        /* Utilities */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.5;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="glass-container">
+        <h1>NanoLogoPro</h1>
+        <div class="subtitle">AI Car Identification System</div>
+
+        <div class="upload-zone" id="drop-zone">
+            <input type="file" id="file-input" accept="image/*" hidden>
+
+            <div class="upload-content" id="upload-content">
+                <div class="upload-icon">�</div>
+                <p class="upload-text">
+                    Drop vehicle image here<br>
+                    or <span class="browse-link">Initialize Scan</span>
+                </p>
+            </div>
+
+            <div class="preview-wrapper" id="preview-wrapper">
+                <img src="" alt="Scan Preview" class="preview-img" id="preview-img">
+                <div class="remove-btn" id="remove-btn">✕</div>
+            </div>
+        </div>
+
+        <div class="loader-container" id="loader">
+            <div class="speedometer"></div>
+            <div class="loading-text">Analyzing Telemetry...</div>
+        </div>
+
+        <div class="result-panel" id="result-panel">
+            <div class="detected-label">Vehicle I.D. Confirmed</div>
+            <div class="brand-name" id="result-brand">Unknown</div>
+
+            <div class="confidence-bar-container">
+                <div class="confidence-bar" id="confidence-bar"></div>
+            </div>
+            <div class="confidence-text">
+                <span>Confidence Match</span>
+                <span id="confidence-value">0%</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const uploadContent = document.getElementById('upload-content');
+        const previewWrapper = document.getElementById('preview-wrapper');
+        const previewImg = document.getElementById('preview-img');
+        const removeBtn = document.getElementById('remove-btn');
+        const loader = document.getElementById('loader');
+        const resultPanel = document.getElementById('result-panel');
+        const resultBrand = document.getElementById('result-brand');
+        const confidenceBar = document.getElementById('confidence-bar');
+        const confidenceValue = document.getElementById('confidence-value');
+
+        // State
+        let isProcessing = false;
+
+        // Event Listeners
+        dropZone.addEventListener('click', () => !isProcessing && fileInput.click());
+
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        // Highlight drop zone when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        // Handle dropped files
+        dropZone.addEventListener('drop', handleDrop, false);
+        fileInput.addEventListener('change', handleFiles);
+        removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetInterface();
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight() {
+            dropZone.classList.add('dragover');
+        }
+
+        function unhighlight() {
+            dropZone.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles({ target: { files: files } });
+        }
+
+        function handleFiles(e) {
+            if (isProcessing) return;
+
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                showPreview(file);
+                processImage(file);
+            }
+        }
+
+        function showPreview(file) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onloadend = function () {
+                previewImg.src = reader.result;
+                uploadContent.classList.add('hidden');
+                previewWrapper.style.display = 'block'; // using style to override
+
+                // Add a cool scanning effect logic if desired here
+            }
+        }
+
+        function resetInterface() {
+            fileInput.value = '';
+            previewImg.src = '';
+            previewWrapper.style.display = 'none';
+            uploadContent.classList.remove('hidden');
+            resultPanel.style.display = 'none';
+            isProcessing = false;
+        }
+
+        async function processImage(file) {
+            isProcessing = true;
+            loader.style.display = 'flex';
+            resultPanel.style.display = 'none';
+
+            // Artificial delay for "Scanning" effect (UX wow factor)
+            await new Promise(r => setTimeout(r, 1500));
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('System Malfunction');
+
+                const data = await response.json();
+                displayResult(data);
+
+            } catch (error) {
+                console.error(error);
+                alert("Scan Failed: Connection Lost");
+                resetInterface();
+            } finally {
+                loader.style.display = 'none';
+                isProcessing = false;
+            }
+        }
+
+        function displayResult(data) {
+            resultBrand.textContent = data.label;
+
+            // Format confidence (assuming it comes as 0.0-1.0 or percentage)
+            // If data.confidence is 1.0 (hardcoded in backend currently), show random high number for effect? 
+            // Or just use 98% as requested.
+            let conf = parseFloat(data.confidence);
+            if (conf <= 1) conf = conf * 100;
+
+            // Animate values
+            resultPanel.style.display = 'block';
+
+            // Reset bar
+            confidenceBar.style.width = '0%';
+
+            // Animate in
+            setTimeout(() => {
+                confidenceBar.style.width = `${conf}%`;
+                animateNumber(confidenceValue, 0, conf, 1000);
+            }, 100);
+        }
+
+        function animateNumber(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                element.innerHTML = Math.floor(progress * (end - start) + start) + '%';
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+    </script>
+</body>
+
+</html>
