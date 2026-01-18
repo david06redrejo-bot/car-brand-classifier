@@ -1,7 +1,16 @@
 import pytest
 import re
 from playwright.sync_api import sync_playwright, expect
+import requests
 
+def is_server_running():
+    try:
+        requests.get("http://localhost:8000")
+        return True
+    except:
+        return False
+
+@pytest.mark.skipif(not is_server_running(), reason="Server not running")
 def test_file_upload_ui_state():
     """
     Verify script.js logic:
