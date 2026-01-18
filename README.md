@@ -1,7 +1,7 @@
 ---
 title: OmniVision
 emoji: 👁️
-colorFrom: cyan
+colorFrom: blue
 colorTo: purple
 sdk: docker
 pinned: true
