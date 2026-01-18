@@ -69,6 +69,14 @@ def predict_pipeline(image, kmeans, scaler, svm):
     
     # 4. Scaling & SVM Inference
     hist_scaled = scaler.transform(hist_norm)
-    prediction = svm.predict(hist_scaled)
     
-    return prediction[0]
+    # Predict using probability
+    # classes_ is usually ordered lexicographically, but let's assume standard behavior
+    probabilities = svm.predict_proba(hist_scaled)[0]
+    prediction_idx = np.argmax(probabilities)
+    confidence = probabilities[prediction_idx]
+    
+    # We return the index. The label mapping happens outside or we can do it here if we pass labels.
+    # Currently it returns prediction[0] which is the index/label.
+    # Let's keep returning the index but also the confidence.
+    return prediction_idx, confidence

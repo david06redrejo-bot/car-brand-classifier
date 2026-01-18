@@ -24,7 +24,7 @@ SVM_PATH = MODELS_DIR / "classifier.joblib"
 
 # Model Configuration
 # Ensure these match strictly with what was used in training
-NUM_CLUSTERS = 50
+NUM_CLUSTERS = 500
 
 CLASS_LABELS = [
     'hyundai',

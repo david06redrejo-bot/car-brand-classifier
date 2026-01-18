@@ -11,4 +11,10 @@ from typing import Union
 
 class PredictionResponse(BaseModel):
     label: str
-    confidence: Union[float, str] = "N/A" # SVM predict doesn't always give proba unless calibrated
+    confidence: Union[float, str] = "N/A"
+
+class FeedbackRequest(BaseModel):
+    image_base64: str
+    label: str
+    is_correct: bool
+    new_brand_name: Union[str, None] = None

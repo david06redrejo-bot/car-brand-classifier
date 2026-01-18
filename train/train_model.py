@@ -51,7 +51,7 @@ def load_dataset(paths, classes):
     return image_paths, labels
 
 # Function to run training
-def run_training(dataset_paths, classes, num_clusters=50):
+def run_training(dataset_paths, classes, num_clusters=500):
     print("Loading dataset...")
     image_paths, labels = load_dataset(dataset_paths, classes)
     
@@ -64,7 +64,7 @@ def run_training(dataset_paths, classes, num_clusters=50):
     all_descriptors = []
     image_descriptors = []
 
-    # Extract ORB features from all images
+    # Extract SIFT features from all images
     print("Extracting SIFT features...")
     for path in image_paths:
         try:
@@ -111,16 +111,55 @@ def run_training(dataset_paths, classes, num_clusters=50):
         all_histograms.append(norm_histogram)
     
     histograms = np.array(all_histograms)
+    labels = np.array(labels)
 
-    # Train Standard Scaler and SVM
+    # Split into Train and Test for Evaluation
+    from sklearn.model_selection import train_test_split
+    X_train, X_test, y_train, y_test = train_test_split(histograms, labels, test_size=0.2, random_state=42, stratify=labels)
+
+    # Train Standard Scaler on Train set
     print("Training SVM...")
     scaler = StandardScaler()
-    histograms_train = scaler.fit_transform(histograms)
-    labels_train = np.array(labels)
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
     
-    svm = SVC(kernel='linear', C=1.0, random_state=42)
-    svm.fit(histograms_train, labels_train)
+    # Enable probability and train SVM
+    svm = SVC(kernel='linear', C=1.0, random_state=42, probability=True)
+    svm.fit(X_train_scaled, y_train)
     
+    # Evaluation & Confusion Matrix
+    print("Evaluating model...")
+    from sklearn.metrics import accuracy_score, confusion_matrix
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
+    y_pred = svm.predict(X_test_scaled)
+    acc = accuracy_score(y_test, y_pred)
+    print(f"Test Set Accuracy: {acc * 100:.2f}%")
+
+    # Generate Confusion Matrix
+    cm = confusion_matrix(y_test, y_pred)
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=classes, yticklabels=classes)
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
+    plt.title('Confusion Matrix')
+    
+    # Save Confusion Matrix to static folder
+    # Assuming config.py is in 'core' and static is one level up from core or train
+    import core.config
+    static_dir = os.path.join(core.config.BASE_DIR, 'static')
+    os.makedirs(static_dir, exist_ok = True)
+    conf_matrix_path = os.path.join(static_dir, 'confusion_matrix.png')
+    plt.savefig(conf_matrix_path)
+    plt.close()
+    print(f"Confusion matrix saved to {conf_matrix_path}")
+
+    # Retrain on FULL dataset for final production model
+    print("Retraining on full dataset for production...")
+    X_full_scaled = scaler.fit_transform(histograms)
+    svm.fit(X_full_scaled, labels)
+
     # Save artifacts
     print("Saving models...")
     os.makedirs(MODELS_DIR, exist_ok = True)

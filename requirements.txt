@@ -9,3 +9,5 @@ numpy
 opencv-python-headless
 # Data download
 kagglehub
+matplotlib
+seaborn
