@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmniVision - Multi-Domain Recognition</title>
+    <title>OmniVision - Neural Interface</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Orbitron:wght@400;700;900&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;500;700&family=Orbitron:wght@400;700;900&display=swap"
         rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <link rel="stylesheet" href="static/style.css">
@@ -16,137 +16,143 @@
 
 <body class="theme-default">
 
-    <!-- DOMAIN SELECTOR OVERLAY -->
-    <div id="domain-selector" class="domain-selector-overlay">
-        <h1 class="main-title">OmniVision</h1>
-        <p class="main-subtitle">SELECT INTELLIGENCE MODULE</p>
+    <!-- OVERLAY: DOMAIN SELECTOR -->
+    <div id="domain-selector" class="cyber-overlay">
+        <div class="content-wrapper">
+            <h1 class="cyber-glitch" data-text="OMNIVISION">OMNIVISION</h1>
+            <div class="separator-line"></div>
+            <p class="cyber-subtitle">SELECT NEURAL PATHWAY</p>
 
-        <div class="domain-grid">
-            <div class="domain-card" onclick="selectDomain('cars')">
-                <div class="card-icon">🏎️</div>
-                <h3>Automotive</h3>
-                <p>Vehicle Identification</p>
-                <div class="card-glow glow-cyan"></div>
-            </div>
-            <div class="domain-card" onclick="selectDomain('fashion')">
-                <div class="card-icon">👜</div>
-                <h3>High Fashion</h3>
-                <p>Luxury Brand Audit</p>
-                <div class="card-glow glow-gold"></div>
-            </div>
-            <div class="domain-card" onclick="selectDomain('laliga')">
-                <div class="card-icon">⚽</div>
-                <h3>LaLiga</h3>
-                <p>Club Recognition</p>
-                <div class="card-glow glow-green"></div>
-            </div>
-            <div class="domain-card" onclick="selectDomain('tech')">
-                <div class="card-icon">💻</div>
-                <h3>Big Tech</h3>
-                <p>Corporate Identity</p>
-                <div class="card-glow glow-blue"></div>
-            </div>
-            <div class="domain-card" onclick="selectDomain('food')">
-                <div class="card-icon">🍔</div>
-                <h3>Fast Food</h3>
-                <p>Chain Detection</p>
-                <div class="card-glow glow-orange"></div>
+            <div class="cyber-grid" id="domain-grid">
+                <!-- Cards injected via JS or static hardcoded with data attributes -->
+                <div class="cyber-card" data-domain="cars">
+                    <div class="card-border"></div>
+                    <div class="card-icon">🏎️</div>
+                    <h3>AUTOMOTIVE</h3>
+                    <p>VEHICLE ID</p>
+                </div>
+                <div class="cyber-card" data-domain="fashion">
+                    <div class="card-border"></div>
+                    <div class="card-icon">👜</div>
+                    <h3>FASHION</h3>
+                    <p>LUXURY AUDIT</p>
+                </div>
+                <div class="cyber-card" data-domain="laliga">
+                    <div class="card-border"></div>
+                    <div class="card-icon">⚽</div>
+                    <h3>LALIGA</h3>
+                    <p>CLUB RECON</p>
+                </div>
+                <div class="cyber-card" data-domain="tech">
+                    <div class="card-border"></div>
+                    <div class="card-icon">💻</div>
+                    <h3>BIG TECH</h3>
+                    <p>CORP IDENTITY</p>
+                </div>
+                <div class="cyber-card" data-domain="food">
+                    <div class="card-border"></div>
+                    <div class="card-icon">🍔</div>
+                    <h3>FAST FOOD</h3>
+                    <p>CHAIN DETECT</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- MAIN APP (Hidden initially) -->
-    <div id="app-container" class="scroll-container hidden">
+    <!-- MAIN INTERFACE -->
+    <main id="app-interface" class="hidden">
 
-        <!-- SECTION 1: HERO -->
-        <section id="hero" class="parallax-section">
-            <div class="parallax-bg hero-bg" id="hero-bg"></div>
-            <div class="glass-panel hero-content">
-                <h1 class="animate-title" id="module-title">MODULE ACTIVE</h1>
-                <p class="subtitle animate-fade" id="module-subtitle">System Online</p>
-                <button class="cta-btn safe-btn" onclick="scrollToSection('playground')">INITIATE SCAN</button>
-                <button class="cta-btn outline-btn" onclick="resetDomain()">SWITCH MODULE</button>
+        <!-- SIDEBAR NAV -->
+        <nav class="cyber-nav">
+            <div class="nav-brand">OV-1</div>
+            <ul class="nav-menu">
+                <li class="nav-item active" data-target="hero">STATUS</li>
+                <li class="nav-item" data-target="playground">VISION</li>
+                <li class="nav-item" data-target="metrics">METRICS</li>
+            </ul>
+            <div class="nav-footer" id="reset-btn">
+                <span>⚠ RESET</span>
             </div>
-        </section>
+        </nav>
 
-        <!-- SECTION 2: PLAYGROUND -->
-        <section id="playground" class="parallax-section">
-            <div class="parallax-bg vision-bg" id="vision-bg"></div>
-            <div class="glass-container vision-core">
-                <h2>Vision Core</h2>
+        <!-- VIEWPORT -->
+        <div class="cyber-viewport">
 
-                <div class="upload-zone" id="drop-zone">
-                    <input type="file" id="file-input" accept="image/*" hidden>
-
-                    <div class="scan-overlay hidden" id="scan-overlay">
-                        <div class="laser-line"></div>
-                    </div>
-
-                    <div class="upload-content" id="upload-content">
-                        <div class="upload-icon">⚛</div>
-                        <p>Inject Data Stream</p>
-                        <span class="browse-link">[SELECT FILE]</span>
-                    </div>
-
-                    <div class="preview-wrapper" id="preview-wrapper">
-                        <img src="" alt="Input" class="preview-img" id="preview-img">
-                        <div class="remove-btn" id="remove-btn">✕</div>
+            <!-- SECTION 1: HERO -->
+            <section id="hero" class="cyber-section active">
+                <div class="hero-bg-layer" id="hero-bg"></div>
+                <div class="cyber-panel center-panel">
+                    <h2 class="section-title" id="module-title">SYSTEM READY</h2>
+                    <p id="module-subtitle">AWAITING INPUT</p>
+                    <div class="cyber-btn-group">
+                        <button class="cyber-btn primary" id="init-btn">INITIALIZE SCANNER</button>
                     </div>
                 </div>
+            </section>
 
-                <div id="status-display" class="status-display hidden">
-                    <span class="blink">_</span> <span id="status-text">SYSTEM READY</span>
-                </div>
-
-                <div class="result-panel hidden" id="result-panel">
-                    <div class="detected-label">IDENTIFIED ENTITY</div>
-                    <div class="brand-name" id="result-brand">---</div>
-
-                    <div class="confidence-wrapper">
-                        <div class="confidence-bar-container">
-                            <div class="confidence-bar" id="confidence-bar"></div>
-                        </div>
-                        <div class="confidence-text">
-                            <span>PROBABILITY</span>
-                            <span id="confidence-value">0%</span>
-                        </div>
-                    </div>
-
-                    <div class="feedback-section">
-                        <p>VERIFY DATA</p>
-                        <div class="feedback-buttons">
-                            <button class="feed-btn correct" onclick="handleFeedback(true)">CONFIRM</button>
-                            <button class="feed-btn incorrect" onclick="showCorrectionUI()">REJECT</button>
-                        </div>
-                        <div id="correction-ui" class="hidden">
-                            <select id="correct-label-select">
-                                <option value="" disabled selected>SELECT CLASS</option>
-                            </select>
-                            <input type="text" id="new-brand-input" placeholder="ENTER NEW CLASS ID..." class="hidden">
-                            <button class="submit-feed-btn" onclick="submitCorrection()">INJECT NEW PATTERN</button>
+            <!-- SECTION 2: PLAYGROUND -->
+            <section id="playground" class="cyber-section">
+                <div class="vision-grid">
+                    <div class="vision-panel upload">
+                        <div class="panel-header">INPUT STREAM</div>
+                        <div class="drop-zone" id="drop-zone">
+                            <input type="file" id="file-input" accept="image/*" hidden>
+                            <div class="placeholder-content">
+                                <div class="icon-large">+</div>
+                                <p>DROP DATA PACKET</p>
+                            </div>
+                            <img id="preview-img" class="hidden" alt="Preview">
+                            <div class="scan-line hidden" id="scan-line"></div>
                         </div>
                     </div>
+
+                    <div class="vision-panel results">
+                        <div class="panel-header">ANALYSIS RESULT</div>
+                        <div class="result-content hidden" id="result-content">
+                            <h1 id="result-label" class="neon-text">---</h1>
+                            <div class="confidence-meter">
+                                <label>PROBABILITY INTEGRITY</label>
+                                <div class="progress-track">
+                                    <div class="progress-fill" id="confidence-fill"></div>
+                                </div>
+                                <span id="confidence-val">0%</span>
+                            </div>
+
+                            <div class="feedback-control">
+                                <p>VALIDATE OUTPUT</p>
+                                <div class="btn-row">
+                                    <button class="cyber-btn success small" id="feed-confirm">CONFIRM</button>
+                                    <button class="cyber-btn danger small" id="feed-reject">REJECT</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="status-display" class="status-terminal">
+                            <span class="blink">></span> <span id="status-log">SYSTEM IDLE...</span>
+                        </div>
+                    </div>
                 </div>
+            </section>
+
+            <!-- SECTION 3: METRICS -->
+            <section id="metrics" class="cyber-section">
+                <div class="cyber-panel wide-panel">
+                    <h2>NEURAL DIAGNOSTICS</h2>
+                    <div id="confusion-matrix-plot" style="width:100%;height:500px;"></div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- MODALS for Correction (Hidden) -->
+    <div id="correction-modal" class="cyber-modal hidden">
+        <div class="modal-box">
+            <h3>MANUAL OVERRIDE</h3>
+            <input type="text" id="correction-input" class="cyber-input" placeholder="ENTER CORRECT CLASS ID">
+            <div class="modal-actions">
+                <button class="cyber-btn primary" id="submit-correction">INJECT</button>
+                <button class="cyber-btn ghost" id="cancel-correction">CANCEL</button>
             </div>
-        </section>
-
-        <!-- SECTION 3: METRICS -->
-        <section id="metrics" class="parallax-section">
-            <div class="parallax-bg metrics-bg"></div>
-            <div class="glass-panel metrics-content">
-                <h2>Intelligence Hub</h2>
-                <button class="cta-btn small" onclick="openModal()">OPEN DIAGNOSTICS</button>
-            </div>
-        </section>
-
-    </div>
-
-    <!-- MODAL -->
-    <div id="diagnostics-modal" class="modal hidden">
-        <div class="modal-content glass-panel">
-            <span class="close-modal" onclick="closeModal()">✕</span>
-            <h2>Module Matrix</h2>
-            <div id="confusion-matrix-plot" style="width:100%;height:500px;"></div>
         </div>
     </div>
 
