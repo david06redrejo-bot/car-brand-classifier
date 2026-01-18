@@ -16,3 +16,4 @@ requests
 ImageHash
 pytest-playwright
 playwright
+pytest-asyncio

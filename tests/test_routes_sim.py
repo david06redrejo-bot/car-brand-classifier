@@ -7,6 +7,7 @@ Simulates the behavior of app/routes.py endpoint to ensure no crashes.
 import sys
 import os
 import asyncio
+import pytest
 from unittest.mock import MagicMock, AsyncMock
 from fastapi import UploadFile
 
@@ -19,6 +20,7 @@ from app.services.model_manager import ModelManager
 # Verify we can import it
 print("Successfully imported app.routes.predict")
 
+@pytest.mark.asyncio
 async def test_predict_flow():
     print("Testing predict flow...")
     
