@@ -51,13 +51,13 @@ def load_dataset(paths, classes):
     return image_paths, labels
 
 # Function to run training
-def run_training(dataset_paths, classes, num_clusters=500):
+def run_training(dataset_paths, classes, num_clusters=500, save_model=True):
     print("Loading dataset...")
     image_paths, labels = load_dataset(dataset_paths, classes)
     
     if not image_paths:
         print("No images found! Check your dataset paths.")
-        return
+        return 0.0
 
     print(f"Found {len(image_paths)} images.")
 
@@ -86,7 +86,7 @@ def run_training(dataset_paths, classes, num_clusters=500):
 
     if not all_descriptors:
         print("No descriptors extracted. Cannot train.")
-        return
+        return 0.0
 
     # Train KMeans codebook
     print(f"Training KMeans with {num_clusters} clusters...")
@@ -123,50 +123,63 @@ def run_training(dataset_paths, classes, num_clusters=500):
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
     
-    # Enable probability and train SVM
-    svm = SVC(kernel='linear', C=1.0, random_state=42, probability=True)
+    # Use LinearSVC with CalibratedClassifierCV for probability
+    from sklearn.svm import LinearSVC
+    from sklearn.calibration import CalibratedClassifierCV
+    
+    linear_svc = LinearSVC(dual="auto", random_state=42)
+    svm = CalibratedClassifierCV(linear_svc, method='sigmoid', cv=3)
     svm.fit(X_train_scaled, y_train)
     
     # Evaluation & Confusion Matrix
     print("Evaluating model...")
     from sklearn.metrics import accuracy_score, confusion_matrix
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-
+    import json
+    
     y_pred = svm.predict(X_test_scaled)
     acc = accuracy_score(y_test, y_pred)
     print(f"Test Set Accuracy: {acc * 100:.2f}%")
 
-    # Generate Confusion Matrix
+    # Generate Confusion Matrix data for frontend
     cm = confusion_matrix(y_test, y_pred)
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=classes, yticklabels=classes)
-    plt.xlabel('Predicted')
-    plt.ylabel('Actual')
-    plt.title('Confusion Matrix')
+    cm_list = cm.tolist()
     
-    # Save Confusion Matrix to static folder
-    # Assuming config.py is in 'core' and static is one level up from core or train
+    cm_data = {
+        "classes": classes,
+        "matrix": cm_list,
+        "accuracy": acc
+    }
+    
+    # Save Confusion Matrix JSON to static folder
     import core.config
     static_dir = os.path.join(core.config.BASE_DIR, 'static')
     os.makedirs(static_dir, exist_ok = True)
-    conf_matrix_path = os.path.join(static_dir, 'confusion_matrix.png')
-    plt.savefig(conf_matrix_path)
-    plt.close()
-    print(f"Confusion matrix saved to {conf_matrix_path}")
+    conf_matrix_json_path = os.path.join(static_dir, 'confusion_matrix.json')
+    with open(conf_matrix_json_path, 'w') as f:
+        json.dump(cm_data, f)
+    print(f"Confusion matrix data saved to {conf_matrix_json_path}")
 
     # Retrain on FULL dataset for final production model
-    print("Retraining on full dataset for production...")
-    X_full_scaled = scaler.fit_transform(histograms)
-    svm.fit(X_full_scaled, labels)
+    if save_model:
+        print("Retraining on full dataset for production...")
+        X_full_scaled = scaler.fit_transform(histograms)
+        
+        # Re-instantiate to be safe (though fit typically resets)
+        linear_svc_full = LinearSVC(dual="auto", random_state=42)
+        svm_full = CalibratedClassifierCV(linear_svc_full, method='sigmoid', cv=3)
+        svm_full.fit(X_full_scaled, labels)
 
-    # Save artifacts
-    print("Saving models...")
-    os.makedirs(MODELS_DIR, exist_ok = True)
-    joblib.dump(kmeans, CODEBOOK_PATH)
-    joblib.dump(scaler, SCALER_PATH)
-    joblib.dump(svm, SVM_PATH)
-    print("Training complete.")
+        # Save artifacts
+        print("Saving models...")
+        os.makedirs(MODELS_DIR, exist_ok = True)
+        joblib.dump(kmeans, CODEBOOK_PATH)
+        joblib.dump(scaler, SCALER_PATH)
+        joblib.dump(svm_full, SVM_PATH)
+        print("Training complete.")
+    else:
+        print("Skipping model save (tuning mode).")
+        
+    return acc
 
 from core.config import MODELS_DIR, CODEBOOK_PATH, SCALER_PATH, SVM_PATH, CLASS_LABELS
 

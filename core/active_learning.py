@@ -19,26 +19,19 @@ from train.train_model import run_training
 FEEDBACK_DIR = BASE_DIR / "data" / "feedback"
 os.makedirs(FEEDBACK_DIR, exist_ok=True)
 
-def save_feedback_image(image_bytes: bytes, label: str, brand_new: bool = False):
+def save_feedback_image(image_bytes: bytes, label: str, domain: str = "cars", brand_new: bool = False):
     """
     Saves the image to the training dataset structure.
     """
     # Define target directory
-    # If it's a new brand, we might need to create the directory in the raw data buffer
-    # taking a simplified approach: save to 'data/raw/train/Car_Brand_Logos/Train/<label>'
-    # We assume the directory structure exists or we create it.
-    
-    target_dir = BASE_DIR / "data" / "raw" / "train" / "Car_Brand_Logos" / "Train" / label
+    # data/raw/{domain}/{label}
+    target_dir = BASE_DIR / "data" / "raw" / domain / label
     
     if not target_dir.exists():
         if brand_new:
             target_dir.mkdir(parents=True, exist_ok=True)
-            # Also add to CLASS_LABELS in config? 
-            # modifying code at runtime is risky. 
-            # For now, we just save the file. The next training run needs to pick it up.
-            # ideally we should append to a dynamic config or database.
         else:
-            # If label is known but folder invalid (metric learning?), just create it
+            # If label is known but folder invalid, create it
             target_dir.mkdir(parents=True, exist_ok=True)
             
     filename = f"feedback_{uuid.uuid4().hex}.jpg"

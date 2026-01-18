@@ -37,3 +37,20 @@ CLASS_LABELS = [
     'volkswagen'
 ]
 
+# Domain Configuration for ModelManager
+DOMAINS = {
+    "cars": CLASS_LABELS
+}
+
+def get_model_paths(domain):
+    """
+    Returns the paths for a specific domain's models.
+    """
+    if domain == "cars":
+        return {
+            "kmeans": CODEBOOK_PATH,
+            "scaler": SCALER_PATH,
+            "svm": SVM_PATH
+        }
+    raise ValueError(f"Unknown domain: {domain}")
+

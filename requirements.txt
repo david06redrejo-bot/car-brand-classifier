@@ -11,3 +11,5 @@ opencv-python-headless
 kagglehub
 matplotlib
 seaborn
+duckduckgo_search
+requests

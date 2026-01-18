@@ -4,70 +4,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NanoLogoPro - Active Learning</title>
+    <title>OmniVision - Multi-Domain Recognition</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Orbitron:wght@400;700;900&display=swap"
         rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <link rel="stylesheet" href="static/style.css">
 </head>
 
-<body>
+<body class="theme-default">
 
-    <div class="scroll-container">
+    <!-- DOMAIN SELECTOR OVERLAY -->
+    <div id="domain-selector" class="domain-selector-overlay">
+        <h1 class="main-title">OmniVision</h1>
+        <p class="main-subtitle">SELECT INTELLIGENCE MODULE</p>
+
+        <div class="domain-grid">
+            <div class="domain-card" onclick="selectDomain('cars')">
+                <div class="card-icon">🏎️</div>
+                <h3>Automotive</h3>
+                <p>Vehicle Identification</p>
+                <div class="card-glow glow-cyan"></div>
+            </div>
+            <div class="domain-card" onclick="selectDomain('fashion')">
+                <div class="card-icon">👜</div>
+                <h3>High Fashion</h3>
+                <p>Luxury Brand Audit</p>
+                <div class="card-glow glow-gold"></div>
+            </div>
+            <div class="domain-card" onclick="selectDomain('laliga')">
+                <div class="card-icon">⚽</div>
+                <h3>LaLiga</h3>
+                <p>Club Recognition</p>
+                <div class="card-glow glow-green"></div>
+            </div>
+            <div class="domain-card" onclick="selectDomain('tech')">
+                <div class="card-icon">💻</div>
+                <h3>Big Tech</h3>
+                <p>Corporate Identity</p>
+                <div class="card-glow glow-blue"></div>
+            </div>
+            <div class="domain-card" onclick="selectDomain('food')">
+                <div class="card-icon">🍔</div>
+                <h3>Fast Food</h3>
+                <p>Chain Detection</p>
+                <div class="card-glow glow-orange"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP (Hidden initially) -->
+    <div id="app-container" class="scroll-container hidden">
 
         <!-- SECTION 1: HERO -->
-        <section id="hero">
+        <section id="hero" class="parallax-section">
+            <div class="parallax-bg hero-bg" id="hero-bg"></div>
             <div class="glass-panel hero-content">
-                <h1 class="animate-title">NanoLogoPro</h1>
-                <p class="subtitle animate-fade">Next-Gen AI Car Brand Identification</p>
-                <button class="cta-btn" onclick="scrollToSection('playground')">START SYSTEM</button>
+                <h1 class="animate-title" id="module-title">MODULE ACTIVE</h1>
+                <p class="subtitle animate-fade" id="module-subtitle">System Online</p>
+                <button class="cta-btn safe-btn" onclick="scrollToSection('playground')">INITIATE SCAN</button>
+                <button class="cta-btn outline-btn" onclick="resetDomain()">SWITCH MODULE</button>
             </div>
-            <div class="hero-bg-overlay"></div>
         </section>
 
         <!-- SECTION 2: PLAYGROUND -->
-        <section id="playground">
-            <div class="glass-container">
-                <h2>Vision Module</h2>
+        <section id="playground" class="parallax-section">
+            <div class="parallax-bg vision-bg" id="vision-bg"></div>
+            <div class="glass-container vision-core">
+                <h2>Vision Core</h2>
+
                 <div class="upload-zone" id="drop-zone">
                     <input type="file" id="file-input" accept="image/*" hidden>
-                    <div class="upload-content" id="upload-content">
-                        <div class="upload-icon">💠</div>
-                        <p>Drop Image or <span class="browse-link">Initialize Scan</span></p>
+
+                    <div class="scan-overlay hidden" id="scan-overlay">
+                        <div class="laser-line"></div>
                     </div>
+
+                    <div class="upload-content" id="upload-content">
+                        <div class="upload-icon">⚛</div>
+                        <p>Inject Data Stream</p>
+                        <span class="browse-link">[SELECT FILE]</span>
+                    </div>
+
                     <div class="preview-wrapper" id="preview-wrapper">
-                        <img src="" alt="Preview" class="preview-img" id="preview-img">
+                        <img src="" alt="Input" class="preview-img" id="preview-img">
                         <div class="remove-btn" id="remove-btn">✕</div>
                     </div>
                 </div>
 
+                <div id="status-display" class="status-display hidden">
+                    <span class="blink">_</span> <span id="status-text">SYSTEM READY</span>
+                </div>
+
                 <div class="result-panel hidden" id="result-panel">
-                    <div class="detected-label">Detected Entity</div>
+                    <div class="detected-label">IDENTIFIED ENTITY</div>
                     <div class="brand-name" id="result-brand">---</div>
-                    <div class="confidence-bar-container">
-                        <div class="confidence-bar" id="confidence-bar"></div>
-                    </div>
-                    <div class="confidence-text">
-                        <span>Confidence</span>
-                        <span id="confidence-value">0%</span>
+
+                    <div class="confidence-wrapper">
+                        <div class="confidence-bar-container">
+                            <div class="confidence-bar" id="confidence-bar"></div>
+                        </div>
+                        <div class="confidence-text">
+                            <span>PROBABILITY</span>
+                            <span id="confidence-value">0%</span>
+                        </div>
                     </div>
 
-                    <!-- Feedback Loop -->
                     <div class="feedback-section">
-                        <p>Is this correct?</p>
+                        <p>VERIFY DATA</p>
                         <div class="feedback-buttons">
-                            <button class="feed-btn correct" onclick="handleFeedback(true)">Correct</button>
-                            <button class="feed-btn incorrect" onclick="showCorrectionUI()">Incorrect</button>
+                            <button class="feed-btn correct" onclick="handleFeedback(true)">CONFIRM</button>
+                            <button class="feed-btn incorrect" onclick="showCorrectionUI()">REJECT</button>
                         </div>
                         <div id="correction-ui" class="hidden">
                             <select id="correct-label-select">
-                                <option value="" disabled selected>Select Correct Brand</option>
-                                <!-- Populated by JS -->
+                                <option value="" disabled selected>SELECT CLASS</option>
                             </select>
-                            <input type="text" id="new-brand-input" placeholder="Or type new brand..." class="hidden">
-                            <button class="submit-feed-btn" onclick="submitCorrection()">Submit Correction</button>
+                            <input type="text" id="new-brand-input" placeholder="ENTER NEW CLASS ID..." class="hidden">
+                            <button class="submit-feed-btn" onclick="submitCorrection()">INJECT NEW PATTERN</button>
                         </div>
                     </div>
                 </div>
@@ -75,19 +131,23 @@
         </section>
 
         <!-- SECTION 3: METRICS -->
-        <section id="metrics">
+        <section id="metrics" class="parallax-section">
+            <div class="parallax-bg metrics-bg"></div>
             <div class="glass-panel metrics-content">
-                <h2>Global Model Performance</h2>
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <img src="static/confusion_matrix.png" alt="Confusion Matrix" class="matrix-img"
-                            onerror="this.src='https://placehold.co/600x400?text=Matrix+Unavailable'">
-                        <p class="metric-caption">Live Confusion Matrix (Test Set)</p>
-                    </div>
-                </div>
+                <h2>Intelligence Hub</h2>
+                <button class="cta-btn small" onclick="openModal()">OPEN DIAGNOSTICS</button>
             </div>
         </section>
 
+    </div>
+
+    <!-- MODAL -->
+    <div id="diagnostics-modal" class="modal hidden">
+        <div class="modal-content glass-panel">
+            <span class="close-modal" onclick="closeModal()">✕</span>
+            <h2>Module Matrix</h2>
+            <div id="confusion-matrix-plot" style="width:100%;height:500px;"></div>
+        </div>
     </div>
 
     <script src="static/script.js"></script>

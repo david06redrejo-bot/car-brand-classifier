@@ -29,16 +29,21 @@ async def get_classes():
 
 
 @router.post("/predict", response_model=PredictionResponse)
-async def predict(request: Request, file: UploadFile = File(...)):
+async def predict(request: Request, domain: str = "cars", file: UploadFile = File(...)):
     """
-    Endpoint to predict image class.
+    Endpoint to predict image class for a specific domain.
+    """
+    from app.services.model_manager import ModelManager
+    from core.config import DOMAINS
     
-    Args:
-        request: The FastAPI request object (to access app.state).
-        file: Uploaded image file.
-    """
-    if not request.app.state.kmeans or not request.app.state.svm:
-        raise HTTPException(status_code=503, detail="Models not loaded")
+    if domain not in DOMAINS:
+        raise HTTPException(status_code=400, detail="Invalid domain")
+        
+    manager = ModelManager()
+    models = manager.load_domain(domain)
+    
+    if not models:
+        raise HTTPException(status_code=503, detail=f"Models for {domain} not available (or not trained).")
 
     # 1. Read and Decode Image
     try:
@@ -49,19 +54,26 @@ async def predict(request: Request, file: UploadFile = File(...)):
 
     # 2. Prediction Pipeline
     try:
-        # Pass models from app.state
         prediction_index, confidence = predict_pipeline(
             image, 
-            request.app.state.kmeans, 
-            request.app.state.scaler, 
-            request.app.state.svm
+            models['kmeans'], 
+            models['scaler'], 
+            models['svm']
         )
+        
+        # Check for Unknown (>35% usually 0.35, but let's check format)
+        # predict_pipeline returns probability 0-1
         
         # Map index to label
         try:
-            label_str = CLASS_LABELS[int(prediction_index)]
+            # We must use the class list for this specific domain
+            labels = DOMAINS[domain]
+            label_str = labels[int(prediction_index)]
         except (IndexError, ValueError):
             label_str = f"Unknown ({prediction_index})"
+        
+        if confidence < 0.35:
+            label_str = "Unrecognized Entity"
         
         return PredictionResponse(label=label_str.title(), confidence=float(confidence))
         
@@ -69,16 +81,17 @@ async def predict(request: Request, file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
 @router.post("/feedback")
-async def feedback_loop(feedback: FeedbackRequest, background_tasks: BackgroundTasks):
+async def feedback_loop(feedback: FeedbackRequest, background_tasks: BackgroundTasks, domain: str = "cars"):
     """
-    Endpoint to receive user feedback and trigger retraining.
+    Endpoint to receive user feedback, scrape images (if new), and trigger retraining.
     """
     try:
         import base64
-        from core.active_learning import save_feedback_image, trigger_retraining_task
+        from core.active_learning import save_feedback_image
+        from app.services.training import TrainingService
+        from app.services.scraper import ScraperService
         
-        # Decode image
-        # Expecting data:image/jpeg;base64,.....
+        # 1. Decode User Image
         if "," in feedback.image_base64:
             header, encoded = feedback.image_base64.split(",", 1)
         else:
@@ -86,20 +99,31 @@ async def feedback_loop(feedback: FeedbackRequest, background_tasks: BackgroundT
             
         image_bytes = base64.b64decode(encoded)
         
-        # Determine label
+        # 2. Determine Logic
         label_to_save = feedback.label.lower()
+        is_new_brand = False
+        
         if feedback.new_brand_name:
-            label_to_save = feedback.new_brand_name.lower()
+            label_to_save = feedback.new_brand_name.lower().strip()
+            is_new_brand = True
             
-        print(f"Received feedback: {label_to_save}")
+        print(f"Received feedback: {label_to_save} (New: {is_new_brand})")
         
-        # Save image
-        save_feedback_image(image_bytes, label_to_save, brand_new=bool(feedback.new_brand_name))
+        # 3. Save the single feedback image
+        save_feedback_image(image_bytes, label_to_save, domain=domain, brand_new=is_new_brand)
         
-        # Trigger retraining in background
-        background_tasks.add_task(trigger_retraining_task)
+        # 4. If New Brand -> Trigger Scraper
+        if is_new_brand:
+            # We add a background task to scrape MORE images to make the class robust
+            scraper = ScraperService()
+            # Run blocking scrape in thread pool
+            background_tasks.add_task(scraper.scrape_brand, label_to_save, domain=domain)
         
-        return {"status": "success", "message": "Feedback received. Retraining started."}
+        # 5. Trigger Retraining (Thread-Safe)
+        trainer = TrainingService()
+        background_tasks.add_task(trainer.run_async, domain=domain)
+        
+        return {"status": "success", "message": "Feedback received. System updating in background."}
         
     except Exception as e:
         print(f"Feedback error: {e}")

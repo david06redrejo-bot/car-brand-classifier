@@ -17,38 +17,17 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.routes import router
-from core.config import CODEBOOK_PATH, SCALER_PATH, SVM_PATH
+# from core.config import CODEBOOK_PATH, SCALER_PATH, SVM_PATH # Obsolete
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Lifespan context manager to handle startup and shutdown events.
-    Loads ML models into app.state to keep them in memory.
+    Lifespan context manager.
+    Model loading is now lazy-handled by ModelManager.
     """
-    # Startup: Load models
-    print("Loading models...")
-    try:
-        # Load artifacts using joblib (since they were saved with joblib/pickle)
-        # Note: joblib.load works for both pickle and joblib files usually
-        app.state.kmeans = joblib.load(CODEBOOK_PATH)
-        app.state.scaler = joblib.load(SCALER_PATH)
-        app.state.svm = joblib.load(SVM_PATH)
-        print("Models loaded successfully.")
-    except Exception as e:
-        print(f"Error loading models: {e}")
-        # In a real scenario, we might want to crash if models fail to load
-        # For now, we'll log it.
-        app.state.kmeans = None
-        app.state.scaler = None
-        app.state.svm = None
-    
+    print("System startup...")
     yield
-    
-    # Shutdown: Clean up resources if necessary
     print("Shutting down...")
-    app.state.kmeans = None
-    app.state.scaler = None
-    app.state.svm = None
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
