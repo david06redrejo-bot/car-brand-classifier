@@ -21,6 +21,7 @@ from duckduckgo_search import DDGS
 # Fix path to import core.config
 sys.path.append(str(Path(__file__).parent.parent))
 from core.config import BASE_DIR, DOMAINS
+from core.image_utils import sanitize_image
 
 DATA_ROOT = BASE_DIR / "data" / "raw"
 
