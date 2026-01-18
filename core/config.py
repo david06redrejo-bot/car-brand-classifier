@@ -34,7 +34,8 @@ CLASS_LABELS = [
     'opel',
     'skoda',
     'toyota',
-    'volkswagen'
+    'volkswagen',
+    'background'
 ]
 
 # Domain Configuration for ModelManager
@@ -42,15 +43,17 @@ DOMAINS = {
     "cars": CLASS_LABELS
 }
 
+# Metrics Directory
+METRICS_DIR = BASE_DIR / "static" / "metrics"
+
 def get_model_paths(domain):
     """
     Returns the paths for a specific domain's models.
     """
-    if domain == "cars":
-        return {
-            "kmeans": CODEBOOK_PATH,
-            "scaler": SCALER_PATH,
-            "svm": SVM_PATH
-        }
-    raise ValueError(f"Unknown domain: {domain}")
-
+    domain_model_dir = MODELS_DIR / domain
+    return {
+        "kmeans": domain_model_dir / "kmeans.pkl",
+        "scaler": domain_model_dir / "scaler.pkl",
+        "svm": domain_model_dir / "svm.pkl",
+        "classes": domain_model_dir / "classes.pkl"
+    }

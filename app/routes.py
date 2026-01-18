@@ -36,6 +36,9 @@ async def predict(request: Request, domain: str = "cars", file: UploadFile = Fil
     from app.services.model_manager import ModelManager
     from core.config import DOMAINS
     
+    # Harden domain input
+    domain = domain.lower().strip()
+    
     if domain not in DOMAINS:
         raise HTTPException(status_code=400, detail="Invalid domain")
         
@@ -49,28 +52,36 @@ async def predict(request: Request, domain: str = "cars", file: UploadFile = Fil
     try:
         contents = await file.read()
         image = read_image_file(contents)
+    except ValueError as e:
+        # read_image_file raises ValueError for bad images
+        print(f"Image Error: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid image format: {str(e)}")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid image file: {str(e)}")
+        print(f"Upload Error: {e}")
+        raise HTTPException(status_code=422, detail=f"Could not read file: {str(e)}")
 
     # 2. Prediction Pipeline
     try:
-        prediction_index, confidence = predict_pipeline(
-            image, 
-            models['kmeans'], 
-            models['scaler'], 
-            models['svm']
-        )
-        
-        # Check for Unknown (>35% usually 0.35, but let's check format)
-        # predict_pipeline returns probability 0-1
+        with PREDICTION_LOCK:
+            prediction_index, confidence = predict_pipeline(
+                image, 
+                models['kmeans'], 
+                models['scaler'], 
+                models['svm']
+            )
         
         # Map index to label
         try:
             # We must use the class list for this specific domain
-            labels = DOMAINS[domain]
-            label_str = labels[int(prediction_index)]
-        except (IndexError, ValueError):
-            label_str = f"Unknown ({prediction_index})"
+            labels = models.get('classes', DOMAINS.get(domain, []))
+            if int(prediction_index) < len(labels):
+                label_str = labels[int(prediction_index)]
+            else:
+                print(f"Warning: Index {prediction_index} out of bounds for {domain}")
+                label_str = f"Unknown ({prediction_index})"
+        except (IndexError, ValueError) as e:
+            print(f"Label Mapping Error: {e}")
+            label_str = f"Processing Error ({prediction_index})"
         
         if confidence < 0.35:
             label_str = "Unrecognized Entity"
@@ -78,20 +89,26 @@ async def predict(request: Request, domain: str = "cars", file: UploadFile = Fil
         return PredictionResponse(label=label_str.title(), confidence=float(confidence))
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Prediction Internal Error: {str(e)}")
+
+# GLOBAL LOCK to prevent race conditions during model swapping/prediction
+from core.locks import PREDICTION_LOCK
 
 @router.post("/feedback")
 async def feedback_loop(feedback: FeedbackRequest, background_tasks: BackgroundTasks, domain: str = "cars"):
     """
     Endpoint to receive user feedback, scrape images (if new), and trigger retraining.
+    Implements Self-Healing Data Loop via Orchestrator.
     """
     try:
         import base64
         from core.active_learning import save_feedback_image
-        from app.services.training import TrainingService
-        from app.services.scraper import ScraperService
+        import app.services.orchestrator as orchestrator
+        from core.config import BASE_DIR
         
-        # 1. Decode User Image
+        # 1. Decode & Save Image
         if "," in feedback.image_base64:
             header, encoded = feedback.image_base64.split(",", 1)
         else:
@@ -99,32 +116,37 @@ async def feedback_loop(feedback: FeedbackRequest, background_tasks: BackgroundT
             
         image_bytes = base64.b64decode(encoded)
         
-        # 2. Determine Logic
+        # Determine Logic
         label_to_save = feedback.label.lower()
-        is_new_brand = False
-        
         if feedback.new_brand_name:
             label_to_save = feedback.new_brand_name.lower().strip()
-            is_new_brand = True
             
-        print(f"Received feedback: {label_to_save} (New: {is_new_brand})")
+        print(f"Received feedback: {label_to_save}")
         
-        # 3. Save the single feedback image
-        save_feedback_image(image_bytes, label_to_save, domain=domain, brand_new=is_new_brand)
+        # save_feedback_image returns path
+        save_feedback_image(image_bytes, label_to_save, domain=domain, brand_new=bool(feedback.new_brand_name))
         
-        # 4. If New Brand -> Trigger Scraper
-        if is_new_brand:
-            # We add a background task to scrape MORE images to make the class robust
-            scraper = ScraperService()
-            # Run blocking scrape in thread pool
-            background_tasks.add_task(scraper.scrape_brand, label_to_save, domain=domain)
+        # 2. Check for STARVATION (New or rare class)
+        target_dir = BASE_DIR / "data" / "raw" / domain / label_to_save
+        file_count = len([f for f in target_dir.iterdir() if f.is_file()])
+        # If we have very few images (e.g. just the one we saved), we need expansion.
+        is_starved = file_count < 5
         
-        # 5. Trigger Retraining (Thread-Safe)
-        trainer = TrainingService()
-        background_tasks.add_task(trainer.run_async, domain=domain)
-        
-        return {"status": "success", "message": "Feedback received. System updating in background."}
+        # 3. Trigger Orchestrator
+        if is_starved:
+            # CASE B: STARVATION -> Expand then Retrain
+            background_tasks.add_task(orchestrator.expand_and_retrain, domain=domain, label=label_to_save)
+            action = "expanding_and_retraining"
+        else:
+            # CASE A: REFINEMENT -> Just Retrain
+            import app.services.training_services as training_services
+            background_tasks.add_task(training_services.retrain_domain, domain=domain)
+            action = "retraining"
+
+        return {"status": "accepted", "action": action}
         
     except Exception as e:
         print(f"Feedback error: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

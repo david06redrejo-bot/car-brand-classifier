@@ -52,7 +52,8 @@ class ModelManager:
                 models = {
                     "kmeans": joblib.load(paths['kmeans']),
                     "scaler": joblib.load(paths['scaler']),
-                    "svm": joblib.load(paths['svm'])
+                    "svm": joblib.load(paths['svm']),
+                    "classes": joblib.load(paths['classes'])
                 }
                 self.loaded_models[domain] = models
                 self.active_domain = domain

@@ -49,11 +49,21 @@ class TrainingService:
                 # run_training logic was updated to take [parent_path] 
                 
                 # Get labels from config or directory
+                # Get labels from config
                 from core.config import DOMAINS
-                labels = DOMAINS.get(domain, [])
+                config_labels = DOMAINS.get(domain, [])
+                
+                # Dynamic Discovery from Filesystem
+                fs_labels = [d.name for d in data_path.iterdir() if d.is_dir()]
+                
+                # Merge and Sort
+                labels = sorted(list(set(config_labels + fs_labels)))
+                print(f"Training on labels: {labels}")
+                
+                from core.locks import PREDICTION_LOCK
                 
                 # Run training
-                run_training([str(data_path)], labels, num_clusters=500, domain_name=domain)
+                run_training([str(data_path)], labels, num_clusters=500, domain=domain, file_lock=PREDICTION_LOCK)
                 
             except Exception as e:
                 print(f"Training failed: {e}")
@@ -68,3 +78,11 @@ class TrainingService:
         """
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, self.run_training_job, domain)
+
+    @classmethod
+    def run_sync(cls, domain="cars"):
+        """
+        Sync wrapper for blocking calls (e.g. from background services).
+        """
+        service = cls()
+        return service.run_training_job(domain)

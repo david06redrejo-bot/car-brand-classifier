@@ -20,6 +20,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 import joblib
+import contextlib
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
@@ -51,8 +52,10 @@ def load_dataset(paths, classes):
     return image_paths, labels
 
 # Function to run training
-def run_training(dataset_paths, classes, num_clusters=500, save_model=True):
-    print("Loading dataset...")
+def run_training(dataset_paths, classes, num_clusters=500, save_model=True, domain="cars", file_lock=None):
+    from core.config import get_model_paths, METRICS_DIR
+    
+    print(f"Loading dataset for domain: {domain}...")
     image_paths, labels = load_dataset(dataset_paths, classes)
     
     if not image_paths:
@@ -145,19 +148,19 @@ def run_training(dataset_paths, classes, num_clusters=500, save_model=True):
     cm_list = cm.tolist()
     
     cm_data = {
+        "domain": domain,
         "classes": classes,
         "matrix": cm_list,
         "accuracy": acc
     }
     
-    # Save Confusion Matrix JSON to static folder
-    import core.config
-    static_dir = os.path.join(core.config.BASE_DIR, 'static')
-    os.makedirs(static_dir, exist_ok = True)
-    conf_matrix_json_path = os.path.join(static_dir, 'confusion_matrix.json')
-    with open(conf_matrix_json_path, 'w') as f:
+    # Save Confusion Matrix JSON to metrics folder
+    os.makedirs(METRICS_DIR, exist_ok = True)
+    metrics_path = METRICS_DIR / f"{domain}_metrics.json"
+    
+    with open(metrics_path, 'w') as f:
         json.dump(cm_data, f)
-    print(f"Confusion matrix data saved to {conf_matrix_json_path}")
+    print(f"Metrics saved to {metrics_path}")
 
     # Retrain on FULL dataset for final production model
     if save_model:
@@ -169,12 +172,19 @@ def run_training(dataset_paths, classes, num_clusters=500, save_model=True):
         svm_full = CalibratedClassifierCV(linear_svc_full, method='sigmoid', cv=3)
         svm_full.fit(X_full_scaled, labels)
 
-        # Save artifacts
-        print("Saving models...")
-        os.makedirs(MODELS_DIR, exist_ok = True)
-        joblib.dump(kmeans, CODEBOOK_PATH)
-        joblib.dump(scaler, SCALER_PATH)
-        joblib.dump(svm_full, SVM_PATH)
+        # Save artifacts using dynamic paths
+        print(f"Saving models for domain: {domain}...")
+        
+        paths = get_model_paths(domain)
+        # Ensure directory exists (paths['kmeans'] is a file path)
+        paths['kmeans'].parent.mkdir(parents=True, exist_ok=True)
+        
+        ctx = file_lock if file_lock else contextlib.nullcontext()
+        with ctx:
+            joblib.dump(kmeans, paths['kmeans'])
+            joblib.dump(scaler, paths['scaler'])
+            joblib.dump(svm_full, paths['svm'])
+            joblib.dump(classes, paths['classes'])
         print("Training complete.")
     else:
         print("Skipping model save (tuning mode).")

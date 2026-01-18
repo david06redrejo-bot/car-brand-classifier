@@ -13,3 +13,6 @@ matplotlib
 seaborn
 duckduckgo_search
 requests
+ImageHash
+pytest-playwright
+playwright

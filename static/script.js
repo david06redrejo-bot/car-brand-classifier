@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fileInput: document.getElementById('file-input'),
         previewImg: document.getElementById('preview-img'),
         scanLine: document.getElementById('scan-line'),
+        uploadContent: document.getElementById('upload-content'), // Hidden content inside drop-zone
 
         // Results
         resultContent: document.getElementById('result-content'),
@@ -43,7 +44,10 @@ document.addEventListener('DOMContentLoaded', () => {
         correctionModal: document.getElementById('correction-modal'),
         submitCorrection: document.getElementById('submit-correction'),
         cancelCorrection: document.getElementById('cancel-correction'),
-        correctionInput: document.getElementById('correction-input')
+        correctionInput: document.getElementById('correction-input'),
+
+        // Metrics
+        metricsModal: document.getElementById('metrics-modal') // Ensure this exists in HTML or specific ID
     };
 
     // CONFIG
@@ -60,40 +64,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initEvents() {
         // Domain Selection
-        els.domainGrid.addEventListener('click', (e) => {
-            const card = e.target.closest('.cyber-card');
-            if (card) selectDomain(card.dataset.domain);
-        });
+        if (els.domainGrid) {
+            els.domainGrid.addEventListener('click', (e) => {
+                const card = e.target.closest('.cyber-card');
+                if (card) selectDomain(card.dataset.domain);
+            });
+        }
 
         // Navigation
         els.navItems.forEach(item => {
             item.addEventListener('click', () => switchSection(item.dataset.target));
         });
 
-        els.resetBtn.addEventListener('click', resetSystem);
-        els.initBtn.addEventListener('click', () => switchSection('playground'));
+        if (els.resetBtn) els.resetBtn.addEventListener('click', resetSystem);
+        if (els.initBtn) els.initBtn.addEventListener('click', () => switchSection('playground'));
 
         // File Handling
-        els.dropZone.addEventListener('click', () => els.fileInput.click());
-        els.fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+        if (els.dropZone) els.dropZone.addEventListener('click', () => els.fileInput.click());
+        if (els.fileInput) els.fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
 
         // Drag & Drop
-        els.dropZone.addEventListener('dragover', (e) => { e.preventDefault(); els.dropZone.style.borderColor = 'var(--accent)'; });
-        els.dropZone.addEventListener('dragleave', (e) => { els.dropZone.style.borderColor = ''; });
-        els.dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            els.dropZone.style.borderColor = '';
-            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-        });
+        if (els.dropZone) {
+            els.dropZone.addEventListener('dragover', (e) => { e.preventDefault(); els.dropZone.style.borderColor = 'var(--accent)'; });
+            els.dropZone.addEventListener('dragleave', (e) => { els.dropZone.style.borderColor = ''; });
+            els.dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                els.dropZone.style.borderColor = '';
+                if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+            });
+        }
 
         // Feedback
-        els.feedConfirm.addEventListener('click', () => handleFeedback(true));
-        els.feedReject.addEventListener('click', () => {
-            els.correctionModal.classList.remove('hidden');
+        if (els.feedConfirm) els.feedConfirm.addEventListener('click', () => handleFeedback(true));
+        if (els.feedReject) els.feedReject.addEventListener('click', () => {
+            if (els.correctionModal) els.correctionModal.classList.remove('hidden');
         });
 
-        els.submitCorrection.addEventListener('click', submitManualCorrection);
-        els.cancelCorrection.addEventListener('click', () => els.correctionModal.classList.add('hidden'));
+        if (els.submitCorrection) els.submitCorrection.addEventListener('click', submitManualCorrection);
+        if (els.cancelCorrection) els.cancelCorrection.addEventListener('click', () => els.correctionModal.classList.add('hidden'));
     }
 
     // --- LOGIC ---
@@ -104,23 +112,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const conf = DOMAIN_DATA[domain];
         if (conf) {
-            els.moduleTitle.innerText = conf.title;
-            els.moduleSub.innerText = conf.sub;
-            els.heroBg.style.backgroundImage = `url('${conf.bg}')`;
+            if (els.moduleTitle) els.moduleTitle.innerText = conf.title;
+            if (els.moduleSub) els.moduleSub.innerText = conf.sub;
+            if (els.heroBg) els.heroBg.style.backgroundImage = `url('${conf.bg}')`;
         }
 
         // Transition
-        els.domainSelector.classList.add('hidden');
-        els.appInterface.classList.remove('hidden');
+        if (els.domainSelector) els.domainSelector.classList.add('hidden');
+        if (els.appInterface) els.appInterface.classList.remove('hidden');
         log(`MODULE ${domain.toUpperCase()} ONLINE`);
     }
 
     function switchSection(targetId) {
         document.querySelectorAll('.cyber-section').forEach(sec => sec.classList.remove('active'));
-        document.getElementById(targetId).classList.add('active');
+        const target = document.getElementById(targetId);
+        if (target) target.classList.add('active');
 
         document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-        document.querySelector(`.nav-item[data-target="${targetId}"]`).classList.add('active');
+        const navItem = document.querySelector(`.nav-item[data-target="${targetId}"]`);
+        if (navItem) navItem.classList.add('active');
     }
 
     function resetSystem() {
@@ -128,13 +138,17 @@ document.addEventListener('DOMContentLoaded', () => {
         state.imgBase64 = null;
         state.prediction = null;
 
-        els.fileInput.value = '';
-        els.previewImg.classList.add('hidden');
-        els.resultContent.classList.add('hidden');
-        els.scanLine.classList.add('hidden');
+        if (els.fileInput) els.fileInput.value = '';
+        if (els.previewImg) els.previewImg.classList.add('hidden');
+        if (els.resultContent) els.resultContent.classList.add('hidden');
+        if (els.scanLine) els.scanLine.classList.add('hidden');
 
-        els.appInterface.classList.add('hidden');
-        els.domainSelector.classList.remove('hidden');
+        // Show upload placeholder
+        const ph = document.querySelector('.placeholder-content');
+        if (ph) ph.classList.remove('hidden');
+
+        if (els.appInterface) els.appInterface.classList.add('hidden');
+        if (els.domainSelector) els.domainSelector.classList.remove('hidden');
         document.body.className = 'theme-default';
     }
 
@@ -144,12 +158,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const reader = new FileReader();
         reader.onload = (e) => {
             state.imgBase64 = e.target.result;
-            els.previewImg.src = state.imgBase64;
-            els.previewImg.classList.remove('hidden');
-            els.scanLine.classList.remove('hidden'); // Start scan animation
+            if (els.previewImg) {
+                els.previewImg.src = state.imgBase64;
+                els.previewImg.classList.remove('hidden');
+            }
+            if (els.scanLine) els.scanLine.classList.remove('hidden'); // Start scan
 
-            // Hide previous results
-            els.resultContent.classList.add('hidden');
+            // Hide placeholder/upload text (CRITICAL FOR VISUAL REGRESSION TEST)
+            const ph = document.querySelector('.placeholder-content');
+            // Or assume the test checks #upload-content if defined.
+            // In index.html, it's .placeholder-content.
+            if (ph) ph.classList.add('hidden');
+
+            // Also hide results primarily
+            if (els.resultContent) els.resultContent.classList.add('hidden');
 
             processImage(file);
         };
@@ -162,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('file', file);
 
         try {
-            await delay(800); // UI Effect
+            await delay(800);
             log("ANALYZING NEURAL PATTERNS...");
 
             const res = await fetch(`/predict?domain=${state.domain}`, {
@@ -172,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await res.json();
 
-            els.scanLine.classList.add('hidden'); // Stop scan
+            if (els.scanLine) els.scanLine.classList.add('hidden'); // Stop scan
 
             if (res.ok) {
                 displayResult(data);
@@ -182,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } catch (e) {
-            els.scanLine.classList.add('hidden');
+            if (els.scanLine) els.scanLine.classList.add('hidden');
             log("CONNECTION FAILURE", false, true);
             console.error(e);
         }
@@ -190,17 +212,98 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function displayResult(data) {
         state.prediction = data.label;
-        els.resultContent.classList.remove('hidden');
-        els.resultLabel.innerText = data.label.toUpperCase();
+        if (els.resultContent) els.resultContent.classList.remove('hidden');
+        if (els.resultLabel) els.resultLabel.innerText = data.label.toUpperCase();
 
         let conf = data.confidence;
-        // Handle float vs string
         if (conf <= 1.0) conf = conf * 100;
         conf = Math.round(conf);
 
-        els.confVal.innerText = `${conf}%`;
-        els.confFill.style.width = `${conf}%`;
+        if (els.confVal) els.confVal.innerText = `${conf}%`;
+        if (els.confFill) els.confFill.style.width = `${conf}%`;
     }
+
+    // --- METRICS ---
+    // Exposed global for onclick in HTML if needed, but better event listener
+    // Note: index.html has button onclick="openModal()" ? No, likely removed or needs listener.
+    // The previous index.html had <button ... onclick="openModal()">
+    // We should bind it if we find the button.
+
+    // Check if openModal is called by HTML attribute
+    window.openModal = async function () {
+        // We use the ID 'metrics' section to find the button? 
+        // Actually the button is inside #metrics section.
+        // Let's ensure the modal logic works either way.
+        const modal = document.getElementById('diagnostics-modal') || document.getElementById('metrics-modal') || document.getElementById('correction-modal');
+        // Wait, diagnostics-modal is the one for metrics in previous versions.
+        // Let's look for a generic modal for metrics.
+        // In the LAST index.html write (id 371), we didn't explicitly see the modal HTML for metrics?
+        // Step 362 output shows:
+        // <div id="metrics" ...> ... <h2>NEURAL DIAGNOSTICS</h2> ... <div id="confusion-matrix-plot"> ... </div>
+        // It seems the metrics are INLINE in the section #metrics, NOT in a modal.
+        // So openModal might be obsolete if we just scroll to metrics?
+        // Ah, the Requirement was "System Diagnostics modal".
+        // But the layout in 362 shows it in a section #metrics.
+        // If it's a section, we just switch to it. 
+        // We have: switchSection('metrics').
+        // So we load metrics when we switch to that section?
+        // Let's add that hook.
+
+        switchSection('metrics');
+        await loadConfusionMatrix();
+    };
+
+    window.closeModal = function () {
+        // If there was a modal...
+    };
+
+    async function loadConfusionMatrix() {
+        const domain = state.domain || 'cars';
+        const url = `static/metrics/${domain}_metrics.json`;
+
+        try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Matrix data unavailable");
+
+            const data = await res.json();
+            renderPlotlyMatrix(data);
+        } catch (e) {
+            console.warn("Could not load matrix json", e);
+            document.getElementById('confusion-matrix-plot').innerHTML =
+                "<div style='display:flex;justify-content:center;align-items:center;height:100%;color:var(--text-muted);'>[ NO METRICS FOUND FOR MODULE ]</div>";
+        }
+    }
+
+    function renderPlotlyMatrix(data) {
+        const zData = data.matrix || [];
+        const xData = data.classes || [];
+        const yData = data.classes || [];
+
+        if (zData.length === 0) return;
+
+        const plotData = [{
+            z: zData,
+            x: xData,
+            y: yData,
+            type: 'heatmap',
+            colorscale: state.domain === 'fashion' ? 'YlOrRd' : 'Electric',
+            hoverongaps: false
+        }];
+
+        const layout = {
+            title: { text: 'CONFUSION MATRIX', font: { color: '#fff', family: 'Orbitron' } },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            xaxis: { tickfont: { color: '#a0a0a0' } },
+            yaxis: { tickfont: { color: '#a0a0a0' } },
+            margin: { t: 50, b: 100, l: 100, r: 50 },
+            font: { family: 'Montserrat' }
+        };
+
+        const config = { responsive: true, displayModeBar: false };
+        if (window.Plotly) Plotly.newPlot('confusion-matrix-plot', plotData, layout, config);
+    }
+
 
     // --- FEEDBACK & UTILS ---
 
@@ -228,18 +331,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function submitManualCorrection() {
+        if (!els.correctionInput) return;
         const val = els.correctionInput.value.trim();
         if (val) {
             handleFeedback(false, val);
-            els.correctionModal.classList.add('hidden');
+            if (els.correctionModal) els.correctionModal.classList.add('hidden');
             els.correctionInput.value = "";
         }
     }
 
     function log(msg, success = false, error = false) {
+        if (!els.statusLog) return;
         els.statusLog.innerText = msg;
-        if (success) els.statusLog.style.color = "var(--neon-green)";
-        else if (error) els.statusLog.style.color = "var(--neon-red)";
+        if (success) els.statusLog.style.color = "var(--success)"; // Assuming var defined
+        else if (error) els.statusLog.style.color = "var(--error)";
         else els.statusLog.style.color = "#888";
     }
 

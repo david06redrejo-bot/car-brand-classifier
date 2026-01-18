@@ -1,100 +1,88 @@
 ---
-title: NanoLogoPro
-emoji: 🚗
-colorFrom: blue
-colorTo: indigo
+title: OmniVision
+emoji: 👁️
+colorFrom: cyan
+colorTo: purple
 sdk: docker
-pinned: false
+pinned: true
 app_port: 8000
 ---
 
-# 🚗 NanoLogoPro: AI Car Brand Classifier
+# 👁️ OmniVision: Multi-Domain Visual Intelligence System
 
-A robust implementation of **Bag of Visual Words (BoVW)** using **SIFT (Scale-Invariant Feature Transform)** and **Support Vector Machines (SVM)** to classify car brand logos.
+OmniVision is a scalable, **Self-Healing Computer Vision Architecture** that goes beyond simple classification. It is designed to autonomously adapt, learn from user feedback, and manage intelligence across multiple distinct domains (Automotive, Fashion, Sports, Tech, Food).
 
-🔗 **Live Demo on Hugging Face:** [david06redrejo-bot/car-brand-classifier](https://huggingface.co/spaces/david06redrejo-bot/car-brand-classifier)
+🔗 **Live Demo:** [david06redrejo-bot/car-brand-classifier](https://huggingface.co/spaces/david06redrejo-bot/car-brand-classifier)
 
-![Project Preview](static/preview_image.png)
+![OmniVision Interface](static/preview_image.png)
 
-## 🌟 Data Science & Vision Pipeline
-This project avoids "black box" deep learning in favor of a transparent, understandable computer vision pipeline:
+## 🧠 The Architecture: SIFT + BoVW + Active Learning
 
-1.  **Feature Extraction (SIFT):**
-    *   We use **SIFT** to detect keypoints and compute 128-dimensional invariant descriptors for every image. SIFT is chosen over ORB for its superior robustness to scale and rotation changes, which is critical for logo detection.
-2.  **Vocabulary Construction (K-Means):**
-    *   Sift descriptors from the training set are clustered using **K-Means (k=50)** to create a "Codebook" of visual words.
-3.  **Quantization (BoVW):**
-    *   Each image is converted into a histogram of visual word frequencies.
-4.  **Classification (SVM):**
-    *   A **Support Vector Machine (SVM)** is trained on these histograms to classify the brand.
+This project rejects the "black box" Deep Learning paradigm in favor of a transparent, debuggable pipelien:
 
-## 📁 Project Structure Explained
+1.  **Modular Intelligence (The Brain):**
+    *   A custom `ModelManager` lazy-loads domain-specific "brains" (SVM + Vocabulary) into memory only when needed (LRU Caching).
+    *   Supported Domains: `Cars`, `Fashion`, `LaLiga`, `Tech`, `Food`.
 
-Here is a detailed breakdown of the codebase:
+2.  **Vision Pipeline (The Eyes):**
+    *   **SIFT (Scale-Invariant Feature Transform):** Extracts robust localized keypoints (edges, corners, textures) invariant to scale and rotation.
+    *   **Bag of Visual Words (BoVW):** Quantizes these features into a histogram using a K-Means Codebook (k=500).
+    *   **SVM Classification:** A calibrated Linear SVM predicts the class probability.
 
-*   **`app/`**: FastAPI Backend
-    *   `main.py`: The entry point. Initializes the FastAPI app, loads the models (`lifespan`), and serves the API.
-    *   `routes.py`: Defines the `/predict` endpoint that receives an image and returns the brand.
-*   **`core/`**: Computer Vision Logic
-    *   `vision_logic.py`: The "brain" of the operation. Contains `extract_sift_features`, `build_histogram`, and the full `predict_pipeline`.
-    *   `image_utils.py`: Helpers for loading and processing images (grayscale conversion).
-    *   `config.py`: Central configuration for paths (models, data) and constants (class labels).
-*   **`train/`**: Training Scripts
-    *   `train_model.py`: Automates the entire training process: loads data -> extracts SIFT features -> builds Codebook -> trains SVM -> saves models.
-    *   `download_data.py`: Helper to download the dataset from Kaggle.
-*   **`models/`**: Serialized Artifacts
-    *   `vocabulary.pkl`: The trained K-Means model (Visual Vocabulary).
-    *   `scaler.pkl`: StandardScaler to normalize histograms before SVM.
-    *   `classifier.joblib`: The trained SVM model.
-*   **`static/`**: Frontend
-    *   `index.html`: The single-page application structure.
-    *   `style.css`: Modern glassmorphism styling and animations.
-    *   `script.js`: Handles image upload, drag-and-drop, and API communication.
-*   **`Dockerfile`**: Instructions for Dockerizing the app for deployment (e.g., Hugging Face Spaces).
-*   **`requirements.txt`**: Python dependencies.
+3.  **Self-Healing Data Loop (The Nervous System):**
+    *   **Active Learning:** User feedback (`/feedback`) is not just logged—it triggers the system.
+    *   **Autonomy:** If a user flags a "New Class" (e.g., "Sega" in Tech):
+        1.  The system detects data starvation.
+        2.  Triggers a background **Scraper Agent** to fetch images via DuckDuckGo.
+        3.  Sanitizes and augments the new data.
+        4.  **Re-trains** the domain model in the background without downtime.
 
-## 🚀 How to Run Locally
+## 📁 Project Structure
+
+*   **`app/`**: The Neural Core
+    *   `main.py`: Application entry point & lifespan management.
+    *   `routes.py`: API endpoints for Prediction and Feedback Loop.
+    *   `services/`: Microservices for Scraper, ModelManager, and Training.
+*   **`core/`**: Vision Logic
+    *   `vision_logic.py`: SIFT extraction and Histogram generation.
+    *   `config.py`: Centralized configuration and domain definitions.
+*   **`data/`**: Neural Memory
+    *   `raw/`: Source images organized by `{domain}/{class_label}`.
+*   **`models/`**: Serialized Knowledge
+    *   Contains `.pkl` artifacts for each domain (Codebook, Scaler, SVM).
+*   **`static/`**: Omni-Interface
+    *   Glassmorphism UI/UX with Cyber-Industrial aesthetics.
+    *   `metrics/`: Real-time JSON feeds for the "Intelligence Hub" visualizations.
+
+## 🚀 Deployment & Usage
 
 ### Prerequisites
 *   Python 3.10+
 *   Git
 
-### Steps
+### Quick Start
 
-1.  **Clone the Repository**
+1.  **Clone & Install**
     ```bash
     git clone https://github.com/david06redrejo-bot/car-brand-classifier.git
     cd car-brand-classifier
-    ```
-
-2.  **Create a Virtual Environment (Recommended)**
-    ```bash
-    python -m venv venv
-    # Windows
-    venv\Scripts\activate
-    # Mac/Linux
-    source venv/bin/activate
-    ```
-
-3.  **Install Dependencies**
-    Note: We use `opencv-python-headless` for server environments.
-    ```bash
     pip install -r requirements.txt
     ```
 
-4.  **Run the Server**
+2.  **Ignition**
     ```bash
-    uvicorn app.main:app --reload
+    # Start the Uvicorn Server
+    python -m uvicorn app.main:app --reload
     ```
+    Access the Omni-Interface at `http://127.0.0.1:8000`.
 
-5.  **Access the App**
-    Open your browser and navigate to: [http://127.0.0.1:8000](http://127.0.0.1:8000)
+3.  **Command Line Tools**
+    *   **Seed a new domain:** `python scripts/data_seeder.py --domain tech`
+    *   **Train a domian:** `python train/train_model.py` (Edit script for specific domain targeting)
 
-## 🐳 Docker Deployment
-
-You can also run it inside a Docker container:
+## 🐳 Docker Support
 
 ```bash
-docker build -t car-classifier .
-docker run -p 8000:8000 car-classifier
+docker build -t omnivision .
+docker run -p 8000:8000 omnivision
 ```

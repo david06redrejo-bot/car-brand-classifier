@@ -64,3 +64,39 @@ def resize_image(img: np.ndarray, target_width: int) -> np.ndarray:
         new_height = int(height * scale_ratio)
         img = cv2.resize(img, (target_width, new_height), interpolation=cv2.INTER_AREA)
     return img
+
+def sanitize_image(path, max_size=500):
+    """
+    Validates and resizes an image at the given path.
+    Removes the file if invalid.
+    
+    Args:
+        path (str/Path): Path to the image file.
+        max_size (int): Max dimension for resizing.
+        
+    Returns:
+        bool: True if valid/sanitized, False if removed/invalid.
+    """
+    try:
+        path_str = str(path)
+        # Read with OpenCV
+        img = cv2.imread(path_str)
+        if img is None:
+            if os.path.exists(path_str):
+                os.remove(path_str)
+            return False
+            
+        # Resize if too big
+        h, w = img.shape[:2]
+        if max(h, w) > max_size:
+            scale = max_size / max(h, w)
+            new_w, new_h = int(w * scale), int(h * scale)
+            img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
+            cv2.imwrite(path_str, img) # Overwrite
+            
+        return True
+    except Exception as e:
+        print(f"Error sanitizing {path}: {e}")
+        if os.path.exists(str(path)):
+            os.remove(str(path))
+        return False

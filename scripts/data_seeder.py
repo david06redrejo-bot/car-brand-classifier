@@ -24,29 +24,6 @@ from core.config import BASE_DIR, DOMAINS
 
 DATA_ROOT = BASE_DIR / "data" / "raw"
 
-def sanitize_image(path, max_size=500):
-    try:
-        # Read with OpenCV
-        img = cv2.imread(str(path))
-        if img is None:
-            os.remove(path)
-            return False
-            
-        # Resize if too big
-        h, w = img.shape[:2]
-        if max(h, w) > max_size:
-            scale = max_size / max(h, w)
-            new_w, new_h = int(w * scale), int(h * scale)
-            img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
-            cv2.imwrite(str(path), img) # Overwrite
-            
-        return True
-    except Exception as e:
-        print(f"Error sanitizing {path}: {e}")
-        if os.path.exists(path):
-            os.remove(path)
-        return False
-
 def seed_domain(domain, limit=40):
     print(f"--- Seeding Domain: {domain.upper()} ---")
     ddgs = DDGS()

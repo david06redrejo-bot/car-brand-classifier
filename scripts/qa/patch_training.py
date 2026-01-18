@@ -35,7 +35,7 @@ def run_patched_training():
     # We use a smaller number of clusters for quick QA testing if needed, or keeping default.
     # The prompt implies we should just include the class.
     try:
-        train_model.run_training(patched_paths, patched_classes)
+        train_model.run_training(patched_paths, patched_classes, domain='cars')
         print(">>> Training Complete with Background Class!")
     except Exception as e:
         print(f"!!! Training Failed: {e}")

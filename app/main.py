@@ -41,18 +41,24 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Robust Path Resolution
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+
 # Mount Static Files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Include Router
 app.include_router(router)
 
 @app.get("/")
 async def read_index():
-    with open("static/index.html", "r", encoding="utf-8") as f:
+    index_path = os.path.join(STATIC_DIR, "index.html")
+    with open(index_path, "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
 
 if __name__ == "__main__":
     import uvicorn
+    # Use reload=True only if debugging; implies specific directory structure
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

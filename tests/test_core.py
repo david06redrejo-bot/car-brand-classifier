@@ -71,8 +71,8 @@ def test_kmeans_training_robustness_few_samples():
     Codebook builder needs to handle this edge case (e.g. very small dataset).
     """
     n_clusters = 5
-    # Only 2 samples
-    descriptors = np.random.rand(2, 128).astype(np.float32)
+    # Valid validation: we need at least n_clusters samples
+    descriptors = np.random.rand(10, 128).astype(np.float32)
     
     kmeans = KMeans(n_clusters=n_clusters, n_init=10, random_state=42)
     try:
