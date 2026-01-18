@@ -24,7 +24,7 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from core.image_utils import load_image
-from core.vision_logic import extract_orb_features, build_histogram, normalize_histogram
+from core.vision_logic import extract_sift_features, build_histogram, normalize_histogram
 from core.config import MODELS_DIR, CODEBOOK_PATH, SCALER_PATH, SVM_PATH
 
 # Function to load dataset
@@ -65,12 +65,12 @@ def run_training(dataset_paths, classes, num_clusters=50):
     image_descriptors = []
 
     # Extract ORB features from all images
-    print("Extracting features...")
+    print("Extracting SIFT features...")
     for path in image_paths:
         try:
             image = load_image(path)
-            descriptors = extract_orb_features(image)
-            # ORB can return None if no features found
+            descriptors = extract_sift_features(image)
+            # SIFT can return None if no features found
             if descriptors is None:
                 descriptors = np.array([]) 
             

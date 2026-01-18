@@ -3,7 +3,7 @@ core/vision_logic.py
 
 Responsibility:
     - Encapsulates the Bag of Visual Words (BoVW) algorithm logic.
-    - `extract_orb_features(image)`: Detects and computes local descriptors (ORB).
+    - `extract_sift_features(image)`: Detects and computes local descriptors (SIFT).
     - `build_histogram(descriptors, codebook)`: Maps local descriptors to visual words in the codebook and forms a frequency histogram.
     - `normalize_histogram(histogram)`: Normalizes a single histogram to make the descriptor independent of image size.
     - `predict_pipeline(image, kmeans, scaler, svm)`: Full pipeline for inference: Image -> Label.
@@ -12,16 +12,16 @@ Responsibility:
 import cv2
 import numpy as np
 
-def extract_orb_features(image):
+def extract_sift_features(image):
     """
-    Extracts ORB descriptors from a single grayscale image.
-    Scale and rotation invariance are handled by ORB's internal logic.
+    Extracts SIFT descriptors from a single grayscale image.
+    Scale and rotation invariance are handled by SIFT's internal logic.
     """
-    orb = cv2.ORB_create()
+    sift = cv2.SIFT_create()
     # image already comes as grayscale from utils.py
-    # cv2.ORB_create().detectAndCompute returns (keypoints, descriptors)
-    # descriptors is (n_keypoints, 32) for ORB
-    keypoints, descriptors = orb.detectAndCompute(image, None)
+    # cv2.SIFT_create().detectAndCompute returns (keypoints, descriptors)
+    # descriptors is (n_keypoints, 128) for SIFT
+    keypoints, descriptors = sift.detectAndCompute(image, None)
     return descriptors
 
 def build_histogram(descriptors, kmeans):
@@ -59,7 +59,7 @@ def predict_pipeline(image, kmeans, scaler, svm):
     Used by the FastAPI routes.
     """
     # 1. Extraction
-    des = extract_orb_features(image)
+    des = extract_sift_features(image)
     
     # 2. Quantization
     hist = build_histogram(des, kmeans)
