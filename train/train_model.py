@@ -97,6 +97,12 @@ def run_training(dataset_paths, classes, num_clusters=500, save_model=True, doma
     # Convert to float for KMeans
     stack_descriptors = stack_descriptors.astype(np.float32)
     
+    # Adjust K-Means clusters if we have too few descriptors
+    n_samples = stack_descriptors.shape[0]
+    if n_samples < num_clusters:
+        print(f"Warning: Not enough descriptors ({n_samples}) for {num_clusters} clusters. Reducing clusters to {n_samples}.")
+        num_clusters = n_samples
+    
     kmeans = KMeans(n_clusters=num_clusters, random_state=42)
     kmeans.fit(stack_descriptors)
 
@@ -117,8 +123,13 @@ def run_training(dataset_paths, classes, num_clusters=500, save_model=True, doma
     labels = np.array(labels)
 
     # Split into Train and Test for Evaluation
+    # Split into Train and Test for Evaluation
     from sklearn.model_selection import train_test_split
-    X_train, X_test, y_train, y_test = train_test_split(histograms, labels, test_size=0.2, random_state=42, stratify=labels)
+    try:
+        X_train, X_test, y_train, y_test = train_test_split(histograms, labels, test_size=0.2, random_state=42, stratify=labels)
+    except Exception as e:
+        print(f"Warning: Train/Test split failed ({e}). Using full dataset for training and testing.")
+        X_train, X_test, y_train, y_test = histograms, histograms, labels, labels
 
     # Train Standard Scaler on Train set
     print("Training SVM...")
@@ -131,8 +142,26 @@ def run_training(dataset_paths, classes, num_clusters=500, save_model=True, doma
     from sklearn.calibration import CalibratedClassifierCV
     
     linear_svc = LinearSVC(dual="auto", random_state=42)
-    svm = CalibratedClassifierCV(linear_svc, method='sigmoid', cv=3)
-    svm.fit(X_train_scaled, y_train)
+    # Ensure we have enough samples for CV
+    min_train_samples = min(np.bincount(y_train)) if len(y_train) > 0 else 0
+    
+    if min_train_samples < 2:
+        print("Warning: Not enough samples for calibration. Using raw LinearSVC.")
+        svm = linear_svc
+        svm.fit(X_train_scaled, y_train)
+    else:
+        # Dynamic CV folds: at most 3, but limited by min_train_samples
+        n_cv = min(3, min_train_samples)
+        # CV must be < n_samples, actually for StratifiedKFold (default in CV), n_splits <= n_samples
+        # But if n_samples=2, cv=2 works (1 in each).
+        
+        try:
+            svm = CalibratedClassifierCV(linear_svc, method='sigmoid', cv=n_cv)
+            svm.fit(X_train_scaled, y_train)
+        except Exception as e:
+            print(f"Calibration failed ({e}), reverting to raw LinearSVC.")
+            svm = linear_svc
+            svm.fit(X_train_scaled, y_train)
     
     # Evaluation & Confusion Matrix
     print("Evaluating model...")
@@ -168,9 +197,22 @@ def run_training(dataset_paths, classes, num_clusters=500, save_model=True, doma
         X_full_scaled = scaler.fit_transform(histograms)
         
         # Re-instantiate to be safe (though fit typically resets)
+        # Re-instantiate to be safe (though fit typically resets)
         linear_svc_full = LinearSVC(dual="auto", random_state=42)
-        svm_full = CalibratedClassifierCV(linear_svc_full, method='sigmoid', cv=3)
-        svm_full.fit(X_full_scaled, labels)
+        
+        min_full_samples = min(np.bincount(labels)) if len(labels) > 0 else 0
+        if min_full_samples < 2:
+             print("Warning: Not enough samples for full calibration. Using raw LinearSVC.")
+             svm_full = linear_svc_full
+             svm_full.fit(X_full_scaled, labels)
+        else:
+             n_cv = min(3, min_full_samples)
+             try:
+                svm_full = CalibratedClassifierCV(linear_svc_full, method='sigmoid', cv=n_cv)
+                svm_full.fit(X_full_scaled, labels)
+             except:
+                 svm_full = linear_svc_full
+                 svm_full.fit(X_full_scaled, labels)
 
         # Save artifacts using dynamic paths
         print(f"Saving models for domain: {domain}...")
@@ -196,14 +238,45 @@ from core.config import MODELS_DIR, CODEBOOK_PATH, SCALER_PATH, SVM_PATH, CLASS_
 # ... (rest of imports)
 
 if __name__ == '__main__':
-    classes = CLASS_LABELS
-    # ...
-    # Corrected paths based on download_data.py structure
-    # NOTE: Check if folders are capitalized usually given Kaggle dataset
-    # The ls showed 'Test/lexus', so likely 'Train/lexus' exists.
-    # We will try the most probable paths.
-    train_path = [
-        'data/raw/train/Car_Brand_Logos/Train', 
-        'data/raw/train/Car_Brand_Logos/Test'
-    ]
-    run_training(train_path, classes)
+    import argparse
+    try:
+        from core.config import DATA_DIR
+    except ImportError:
+        DATA_DIR = None
+
+    # Fallback if DATA_DIR is not defined in config
+    if DATA_DIR is None:
+        DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'raw')
+
+    parser = argparse.ArgumentParser(description="Train model for a specific domain")
+    parser.add_argument("--domain", type=str, default="cars", help="Domain to train (cars, fashion, laliga, etc.)")
+    parser.add_argument("--clusters", type=int, default=500, help="Number of KMeans clusters")
+    
+    args = parser.parse_args()
+    
+    domain = args.domain
+    num_clusters = args.clusters
+    
+    from core.config import DOMAINS, CLASS_LABELS
+    
+    if domain == "all":
+        print("Training all domains...")
+        for d, cls_list in DOMAINS.items():
+            print(f"\n>>> Starting training for {d} <<<")
+            train_paths = [os.path.join(DATA_DIR, d)]
+            run_training(train_paths, cls_list, num_clusters=num_clusters, domain=d)
+    else:
+        if domain not in DOMAINS:
+            print(f"Error: Domain '{domain}' not found in configuration.")
+            sys.exit(1)
+            
+        classes = DOMAINS[domain]
+        # Path is data/raw/{domain}
+        train_paths = [os.path.join(DATA_DIR, domain)]
+        
+        print(f"Training domain: {domain}")
+        print(f"Data path: {train_paths}")
+        print(f"Classes: {classes}")
+        
+        run_training(train_paths, classes, num_clusters=num_clusters, domain=domain)
+

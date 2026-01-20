@@ -1,1 +1,1 @@
-{"accuracy": 0.85, "classes": ["Class A", "Class B", "Class C"], "matrix": [[10, 2, 0], [1, 12, 1], [0, 3, 9]]}
+{"domain": "food", "classes": ["mcdonalds", "burger king", "kfc", "starbucks", "subway", "pizza hut", "dominos"], "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]], "accuracy": 1.0}

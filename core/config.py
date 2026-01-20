@@ -26,21 +26,37 @@ SVM_PATH = MODELS_DIR / "classifier.joblib"
 # Ensure these match strictly with what was used in training
 NUM_CLUSTERS = 500
 
-CLASS_LABELS = [
-    'hyundai',
-    'lexus',
-    'mazda',
-    'mercedes',
-    'opel',
-    'skoda',
-    'toyota',
-    'volkswagen',
-    'background'
+# Domain Class Definitions
+CLASS_LABELS_CARS = [
+    'hyundai', 'lexus', 'mazda', 'mercedes', 'opel', 'skoda', 'toyota', 'volkswagen', 'background'
 ]
+
+CLASS_LABELS_FASHION = [
+    'gucci', 'louis vuitton', 'chanel', 'prada', 'nike', 'adidas', 'zara', 'h&m'
+]
+
+CLASS_LABELS_LALIGA = [
+    'real madrid', 'barcelona', 'atletico madrid', 'valencia', 'sevilla', 'betis'
+]
+
+CLASS_LABELS_TECH = [
+    'apple', 'google', 'microsoft', 'amazon', 'tesla', 'samsung', 'sega'
+]
+
+CLASS_LABELS_FOOD = [
+    'mcdonalds', 'burger king', 'kfc', 'starbucks', 'subway', 'pizza hut', 'dominos'
+]
+
+# Default for backward compatibility if imported directly
+CLASS_LABELS = CLASS_LABELS_CARS
 
 # Domain Configuration for ModelManager
 DOMAINS = {
-    "cars": CLASS_LABELS
+    "cars": CLASS_LABELS_CARS,
+    "fashion": CLASS_LABELS_FASHION,
+    "laliga": CLASS_LABELS_LALIGA,
+    "tech": CLASS_LABELS_TECH,
+    "food": CLASS_LABELS_FOOD
 }
 
 # Metrics Directory

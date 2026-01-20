@@ -49,8 +49,20 @@ def seed_domain(domain, limit=40):
             
         query = f"{cls} logo white background"
         
-        # We fetch more because some checks fail
-        results = ddgs.images(query, max_results=limit * 2) 
+        # Retry logic for rate limits
+        import time
+        max_retries = 3
+        results = []
+        for attempt in range(max_retries):
+            try:
+                # Sleep to respect rate limits
+                time.sleep(2 * (attempt + 1)) 
+                results = ddgs.images(query, max_results=limit * 2) 
+                break
+            except Exception as e:
+                print(f"  Search error (Attempt {attempt+1}/{max_retries}): {e}")
+                time.sleep(5)
+ 
         
         count = 0
         existing_hashes = set()
