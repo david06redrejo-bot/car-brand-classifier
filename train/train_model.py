@@ -142,7 +142,7 @@ def run_training(dataset_paths, classes, num_clusters=200, save_model=True, doma
     from sklearn.svm import LinearSVC
     from sklearn.calibration import CalibratedClassifierCV
     
-    linear_svc = LinearSVC(dual="auto", random_state=42)
+    linear_svc = LinearSVC(dual="auto", random_state=42, max_iter=10000)
     # Ensure we have enough samples for CV
     min_train_samples = min(np.bincount(y_train)) if len(y_train) > 0 else 0
     
@@ -166,7 +166,7 @@ def run_training(dataset_paths, classes, num_clusters=200, save_model=True, doma
     
     # Evaluation & Confusion Matrix
     print("Evaluating model...")
-    from sklearn.metrics import accuracy_score, confusion_matrix
+    from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
     import json
     
     y_pred = svm.predict(X_test_scaled)
@@ -176,30 +176,32 @@ def run_training(dataset_paths, classes, num_clusters=200, save_model=True, doma
     # Generate Confusion Matrix data for frontend
     cm = confusion_matrix(y_test, y_pred)
     cm_list = cm.tolist()
+    report = classification_report(y_test, y_pred, target_names=classes, output_dict=True)
     
-    cm_data = {
+    metrics_data = {
         "domain": domain,
         "classes": classes,
         "matrix": cm_list,
-        "accuracy": acc
+        "accuracy": acc,
+        "report": report
     }
     
-    # Save Confusion Matrix JSON to metrics folder
+    # Save per-domain for legacy or individual inspection
     os.makedirs(METRICS_DIR, exist_ok = True)
     metrics_path = METRICS_DIR / f"{domain}_metrics.json"
     
     with open(metrics_path, 'w') as f:
-        json.dump(cm_data, f)
+        json.dump(metrics_data, f, indent=4)
     print(f"Metrics saved to {metrics_path}")
 
     # Retrain on FULL dataset for final production model
     if save_model:
         print("Retraining on full dataset for production...")
+        # 4. Scaling & SVM (Full)
         X_full_scaled = scaler.fit_transform(histograms)
         
         # Re-instantiate to be safe (though fit typically resets)
-        # Re-instantiate to be safe (though fit typically resets)
-        linear_svc_full = LinearSVC(dual="auto", random_state=42)
+        linear_svc_full = LinearSVC(dual="auto", random_state=42, max_iter=10000)
         
         min_full_samples = min(np.bincount(labels)) if len(labels) > 0 else 0
         if min_full_samples < 2:
@@ -232,7 +234,7 @@ def run_training(dataset_paths, classes, num_clusters=200, save_model=True, doma
     else:
         print("Skipping model save (tuning mode).")
         
-    return acc
+    return metrics_data
 
 from core.config import MODELS_DIR, CODEBOOK_PATH, SCALER_PATH, SVM_PATH, CLASS_LABELS
 
@@ -251,13 +253,25 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Train model for a specific domain")
     parser.add_argument("--domain", type=str, default="cars", help="Domain to train (cars, fashion, laliga, etc.)")
-    parser.add_argument("--clusters", type=int, default=200, help="Number of KMeans clusters")
+    parser.add_argument("--clusters", type=int, default=500, help="Number of KMeans clusters")
     
     args = parser.parse_args()
     
     domain = args.domain
     num_clusters = args.clusters
     
+    # Global metrics store
+    ALL_METRICS = {}
+    metrics_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'static', 'metrics_data.json')
+    
+    # Load existing if any (to preserve other domains if training single)
+    if os.path.exists(metrics_file):
+        try:
+            with open(metrics_file, 'r') as f:
+                ALL_METRICS = json.load(f)
+        except:
+            pass
+
     from core.config import DOMAINS, CLASS_LABELS
     
     if domain == "all":
@@ -265,7 +279,9 @@ if __name__ == '__main__':
         for d, cls_list in DOMAINS.items():
             print(f"\n>>> Starting training for {d} <<<")
             train_paths = [os.path.join(DATA_DIR, d)]
-            run_training(train_paths, cls_list, num_clusters=num_clusters, domain=d)
+            res = run_training(train_paths, cls_list, num_clusters=num_clusters, domain=d)
+            if isinstance(res, dict):
+                ALL_METRICS[d] = res
     else:
         if domain not in DOMAINS:
             print(f"Error: Domain '{domain}' not found in configuration.")
@@ -279,5 +295,13 @@ if __name__ == '__main__':
         print(f"Data path: {train_paths}")
         print(f"Classes: {classes}")
         
-        run_training(train_paths, classes, num_clusters=num_clusters, domain=domain)
+        res = run_training(train_paths, classes, num_clusters=num_clusters, domain=domain)
+        if isinstance(res, dict):
+            ALL_METRICS[domain] = res
+
+    # Save global metrics
+    os.makedirs(os.path.dirname(metrics_file), exist_ok=True)
+    with open(metrics_file, 'w') as f:
+        json.dump(ALL_METRICS, f, indent=4)
+    print(f"Global metrics updated at: {metrics_file}")
 

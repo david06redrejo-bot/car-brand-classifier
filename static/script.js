@@ -259,14 +259,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadConfusionMatrix() {
         const domain = state.domain || 'cars';
-        const url = `static/metrics/${domain}_metrics.json`;
+        const url = `static/metrics_data.json`;
 
         try {
             const res = await fetch(url);
             if (!res.ok) throw new Error("Matrix data unavailable");
 
-            const data = await res.json();
-            renderPlotlyMatrix(data);
+            const allData = await res.json();
+            const data = allData[domain];
+
+            if (data) {
+                renderPlotlyMatrix(data);
+            } else {
+                throw new Error("No data for this domain");
+            }
         } catch (e) {
             console.warn("Could not load matrix json", e);
             document.getElementById('confusion-matrix-plot').innerHTML =

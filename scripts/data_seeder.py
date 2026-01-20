@@ -25,7 +25,7 @@ from core.image_utils import sanitize_image
 
 DATA_ROOT = BASE_DIR / "data" / "raw"
 
-def seed_domain(domain, limit=40):
+def seed_domain(domain, limit=50):
     print(f"--- Seeding Domain: {domain.upper()} ---")
     ddgs = DDGS()
     classes = DOMAINS[domain]
