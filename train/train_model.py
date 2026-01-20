@@ -25,7 +25,7 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from core.image_utils import load_image
-from core.vision_logic import extract_sift_features, build_histogram, normalize_histogram
+from core.vision_logic import extract_orb_features, build_histogram, normalize_histogram
 from core.config import MODELS_DIR, CODEBOOK_PATH, SCALER_PATH, SVM_PATH
 
 # Function to load dataset
@@ -52,7 +52,7 @@ def load_dataset(paths, classes):
     return image_paths, labels
 
 # Function to run training
-def run_training(dataset_paths, classes, num_clusters=500, save_model=True, domain="cars", file_lock=None):
+def run_training(dataset_paths, classes, num_clusters=200, save_model=True, domain="cars", file_lock=None):
     from core.config import get_model_paths, METRICS_DIR
     
     print(f"Loading dataset for domain: {domain}...")
@@ -67,13 +67,13 @@ def run_training(dataset_paths, classes, num_clusters=500, save_model=True, doma
     all_descriptors = []
     image_descriptors = []
 
-    # Extract SIFT features from all images
-    print("Extracting SIFT features...")
+    # Extract ORB features from all images
+    print("Extracting ORB features...")
     for path in image_paths:
         try:
             image = load_image(path)
-            descriptors = extract_sift_features(image)
-            # SIFT can return None if no features found
+            descriptors = extract_orb_features(image)
+            # ORB can return None if no features found
             if descriptors is None:
                 descriptors = np.array([]) 
             
@@ -94,10 +94,11 @@ def run_training(dataset_paths, classes, num_clusters=500, save_model=True, doma
     # Train KMeans codebook
     print(f"Training KMeans with {num_clusters} clusters...")
     stack_descriptors = np.vstack(all_descriptors)
-    # Convert to float for KMeans
+    # Convert to float for KMeans (ORB is uint8)
     stack_descriptors = stack_descriptors.astype(np.float32)
     
     # Adjust K-Means clusters if we have too few descriptors
+
     n_samples = stack_descriptors.shape[0]
     if n_samples < num_clusters:
         print(f"Warning: Not enough descriptors ({n_samples}) for {num_clusters} clusters. Reducing clusters to {n_samples}.")
@@ -250,7 +251,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="Train model for a specific domain")
     parser.add_argument("--domain", type=str, default="cars", help="Domain to train (cars, fashion, laliga, etc.)")
-    parser.add_argument("--clusters", type=int, default=500, help="Number of KMeans clusters")
+    parser.add_argument("--clusters", type=int, default=200, help="Number of KMeans clusters")
     
     args = parser.parse_args()
     

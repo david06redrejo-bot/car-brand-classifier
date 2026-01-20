@@ -12,17 +12,19 @@ Responsibility:
 import cv2
 import numpy as np
 
-def extract_sift_features(image):
+def extract_orb_features(image):
     """
-    Extracts SIFT descriptors from a single grayscale image.
-    Scale and rotation invariance are handled by SIFT's internal logic.
+    Extracts ORB descriptors from a single grayscale image.
+    Faster than SIFT, binary descriptors (uint8).
     """
-    sift = cv2.SIFT_create()
-    # image already comes as grayscale from utils.py
-    # cv2.SIFT_create().detectAndCompute returns (keypoints, descriptors)
-    # descriptors is (n_keypoints, 128) for SIFT
-    keypoints, descriptors = sift.detectAndCompute(image, None)
+    orb = cv2.ORB_create(nfeatures=500)
+    # detectAndCompute returns (keypoints, descriptors)
+    # descriptors is (n_keypoints, 32) for ORB (uint8)
+    keypoints, descriptors = orb.detectAndCompute(image, None)
     return descriptors
+
+# Alias for backward compatibility if needed, or just redirect
+extract_features = extract_orb_features
 
 def build_histogram(descriptors, kmeans):
     """
@@ -59,7 +61,8 @@ def predict_pipeline(image, kmeans, scaler, svm):
     Used by the FastAPI routes.
     """
     # 1. Extraction
-    des = extract_sift_features(image)
+    # 1. Extraction
+    des = extract_orb_features(image)
     
     # 2. Quantization
     hist = build_histogram(des, kmeans)
