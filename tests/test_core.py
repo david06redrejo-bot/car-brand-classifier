@@ -2,29 +2,30 @@ import pytest
 import numpy as np
 import cv2
 from sklearn.cluster import KMeans
-from core.vision_logic import extract_sift_features, build_histogram, normalize_histogram
+from core.vision_logic import extract_orb_features, build_histogram, normalize_histogram
 
-def test_extract_sift_features_black_image():
+def test_extract_features_black_image():
     """
     Ensure feature extraction handles images with no features (e.g., solid black) gracefully.
     """
     # Create black image 100x100
     black_img = np.zeros((100, 100), dtype=np.uint8)
-    descriptors = extract_sift_features(black_img)
+    descriptors = extract_orb_features(black_img)
     
-    # OpenCV SIFT returns None when no keypoints are found
+    # OpenCV ORB returns None when no keypoints are found, or empty array
     assert descriptors is None or len(descriptors) == 0
 
-def test_extract_sift_features_white_noise():
+def test_extract_features_white_noise():
     """
     Verify feature extraction works on random noise.
     """
     noise_img = np.random.randint(0, 255, (100, 100), dtype=np.uint8)
-    descriptors = extract_sift_features(noise_img)
+    descriptors = extract_orb_features(noise_img)
     
     # Should probably find some features in noise
     assert descriptors is not None
-    assert descriptors.shape[1] == 128
+    # ORB descriptors are 32 bytes long (binary), SIFT was 128
+    assert descriptors.shape[1] == 32
 
 def test_build_histogram_valid():
     """
@@ -41,8 +42,8 @@ def test_build_histogram_valid():
     n_clusters = 10
     mock_kmeans = MockKMeans(n_clusters)
     
-    # 5 descriptors
-    descriptors = np.random.rand(5, 128).astype(np.float32)
+    # 5 descriptors, shape 32 for ORB
+    descriptors = np.random.rand(5, 32).astype(np.float32)
     
     hist = build_histogram(descriptors, mock_kmeans)
     
@@ -72,7 +73,7 @@ def test_kmeans_training_robustness_few_samples():
     """
     n_clusters = 5
     # Valid validation: we need at least n_clusters samples
-    descriptors = np.random.rand(10, 128).astype(np.float32)
+    descriptors = np.random.rand(10, 32).astype(np.float32)
     
     kmeans = KMeans(n_clusters=n_clusters, n_init=10, random_state=42)
     try:
