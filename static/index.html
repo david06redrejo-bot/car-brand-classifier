@@ -4,159 +4,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmniVision - Multi-Domain Recognition</title>
+    <title>AERO | Car Brand Identity</title>
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;500;700&family=Orbitron:wght@400;700;900&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;600;700&display=swap"
         rel="stylesheet">
-    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-    <link rel="stylesheet" href="static/style.css">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 
-<body class="theme-default">
+<body>
+    <div class="scan-line"></div>
+    <div class="overlay"></div>
 
-    <!-- OVERLAY: DOMAIN SELECTOR -->
-    <div id="domain-selector" class="cyber-overlay">
-        <div class="content-wrapper">
-            <h1 class="cyber-glitch" data-text="OMNIVISION">OMNIVISION</h1>
-            <div class="separator-line"></div>
-            <p class="cyber-subtitle">SELECT NEURAL PATHWAY</p>
+    <header class="cyber-header">
+        <div class="logo">
+            <span class="icon">◉</span> AERO <span class="highlight">VISION</span>
+        </div>
+        <div class="system-status">
+            <span class="status-dot"></span> SYSTEM ONLINE
+        </div>
+    </header>
 
-            <div class="cyber-grid" id="domain-grid">
-                <!-- Cards injected via JS or static hardcoded with data attributes -->
-                <div class="cyber-card" data-domain="cars">
-                    <div class="card-border"></div>
-                    <div class="card-icon">🏎️</div>
-                    <h3>AUTOMOTIVE</h3>
-                    <p>VEHICLE ID</p>
+    <main class="core-container">
+
+        <!-- Left Panel: Scanner -->
+        <section class="scanner-panel">
+            <div class="scanner-frame">
+                <div class="scanner-hud">
+                    <span class="hud-tl"></span><span class="hud-tr"></span>
+                    <span class="hud-bl"></span><span class="hud-br"></span>
                 </div>
-                <div class="cyber-card" data-domain="fashion">
-                    <div class="card-border"></div>
-                    <div class="card-icon">👜</div>
-                    <h3>FASHION</h3>
-                    <p>LUXURY AUDIT</p>
+
+                <div id="drop-zone" class="drop-zone">
+                    <div class="placeholder-content">
+                        <div class="upload-icon">⤓</div>
+                        <p class="primary-text">INITIATE UPLOAD</p>
+                        <p class="secondary-text">DRAG & DROP OR CLICK</p>
+                    </div>
+                    <img id="preview-image" src="" alt="Preview" class="hidden">
+                    <input type="file" id="file-input" hidden accept="image/*">
                 </div>
-                <div class="cyber-card" data-domain="laliga">
-                    <div class="card-border"></div>
-                    <div class="card-icon">⚽</div>
-                    <h3>LALIGA</h3>
-                    <p>CLUB RECON</p>
+
+                <div class="scanning-effect hidden" id="scan-beam"></div>
+            </div>
+
+            <button id="analyze-btn" class="cyber-btn" disabled>
+                <span class="btn-text">RUN DIAGNOSTIC</span>
+                <span class="btn-glitch"></span>
+            </button>
+        </section>
+
+        <!-- Right Panel: Data Analysis -->
+        <section class="analysis-panel">
+            <div class="panel-header">
+                <h2>IDENTIFICATION MATRIX</h2>
+                <div class="panel-deco"></div>
+            </div>
+
+            <div id="results-container" class="results-container hidden">
+                <div class="primary-result">
+                    <span class="label">DETECTED SIGNATURE</span>
+                    <h1 id="brand-name" class="glitch-text" data-text="UNKNOWN">UNKNOWN</h1>
+                    <div class="confidence-wrapper">
+                        <span class="confidence-label">CONFIDENCE</span>
+                        <span id="confidence-value" class="confidence-val">0%</span>
+                    </div>
                 </div>
-                <div class="cyber-card" data-domain="tech">
-                    <div class="card-border"></div>
-                    <div class="card-icon">💻</div>
-                    <h3>BIG TECH</h3>
-                    <p>CORP IDENTITY</p>
-                </div>
-                <div class="cyber-card" data-domain="food">
-                    <div class="card-border"></div>
-                    <div class="card-icon">🍔</div>
-                    <h3>FAST FOOD</h3>
-                    <p>CHAIN DETECT</p>
+
+                <div class="probability-grid" id="prob-grid">
+                    <!-- Dynamic Bars Here -->
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- MAIN INTERFACE -->
-    <main id="app-interface" class="hidden">
-
-        <!-- SIDEBAR NAV -->
-        <nav class="cyber-nav">
-            <div class="nav-brand">OV-1</div>
-            <ul class="nav-menu">
-                <li class="nav-item active" data-target="hero">STATUS</li>
-                <li class="nav-item" data-target="playground">VISION</li>
-                <li class="nav-item" data-target="metrics">METRICS</li>
-            </ul>
-            <div class="nav-footer" id="reset-btn">
-                <span>⚠ RESET</span>
+            <div id="idle-state" class="idle-state">
+                <div class="loader-ring"></div>
+                <p>WAITING FOR INPUT STREAM...</p>
             </div>
-        </nav>
+        </section>
 
-        <!-- VIEWPORT -->
-        <div class="cyber-viewport">
-
-            <!-- SECTION 1: HERO -->
-            <section id="hero" class="cyber-section active">
-                <div class="hero-bg-layer" id="hero-bg"></div>
-                <div class="cyber-panel center-panel">
-                    <h2 class="section-title" id="module-title">SYSTEM READY</h2>
-                    <p id="module-subtitle">AWAITING INPUT</p>
-                    <div class="cyber-btn-group">
-                        <button class="cyber-btn primary" id="init-btn">INITIALIZE SCANNER</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION 2: PLAYGROUND -->
-            <section id="playground" class="cyber-section">
-                <div class="vision-grid">
-                    <div class="vision-panel upload">
-                        <div class="panel-header">INPUT STREAM</div>
-                        <div class="drop-zone" id="drop-zone">
-                            <input type="file" id="file-input" accept="image/*" hidden>
-                            <div class="placeholder-content" id="upload-content">
-                                <div class="icon-large">+</div>
-                                <p>DROP DATA PACKET</p>
-                            </div>
-                            <img id="preview-img" class="hidden" alt="Preview">
-                            <div class="scan-line hidden" id="scan-line"></div>
-                        </div>
-                    </div>
-
-                    <div class="vision-panel results">
-                        <div class="panel-header">ANALYSIS RESULT</div>
-                        <div class="result-content hidden" id="result-content">
-                            <h1 id="result-label" class="neon-text">---</h1>
-                            <div class="confidence-meter">
-                                <label>PROBABILITY INTEGRITY</label>
-                                <div class="progress-track">
-                                    <div class="progress-fill" id="confidence-fill"></div>
-                                </div>
-                                <span id="confidence-val">0%</span>
-                            </div>
-
-                            <div class="feedback-control">
-                                <p>VALIDATE OUTPUT</p>
-                                <div class="btn-row">
-                                    <button class="cyber-btn success small" id="feed-confirm">CONFIRM</button>
-                                    <button class="cyber-btn danger small" id="feed-reject">REJECT</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="status-display" class="status-terminal">
-                            <span class="blink">></span> <span id="status-log">SYSTEM IDLE...</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SECTION 3: METRICS -->
-            <section id="metrics" class="cyber-section">
-                <div class="cyber-panel wide-panel">
-                    <h2>NEURAL DIAGNOSTICS</h2>
-                    <div id="confusion-matrix-plot" style="width:100%;height:500px;"></div>
-                </div>
-            </section>
-
-        </div>
     </main>
 
-    <!-- MODALS for Correction (Hidden) -->
-    <div id="correction-modal" class="cyber-modal hidden">
-        <div class="modal-box">
-            <h3>MANUAL OVERRIDE</h3>
-            <input type="text" id="correction-input" class="cyber-input" placeholder="ENTER CORRECT CLASS ID">
-            <div class="modal-actions">
-                <button class="cyber-btn primary" id="submit-correction">INJECT</button>
-                <button class="cyber-btn ghost" id="cancel-correction">CANCEL</button>
-            </div>
-        </div>
-    </div>
+    <footer class="cyber-footer">
+        <p>NEURAL ENGINE: <span class="engine-ver">MobNet.V2.0</span></p>
+        <p>LATENCY: <span id="latency">0ms</span></p>
+    </footer>
 
-    <script src="static/script.js"></script>
+    <script src="/static/script.js"></script>
 </body>
 
 </html>

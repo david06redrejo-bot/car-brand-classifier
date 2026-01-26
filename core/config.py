@@ -3,7 +3,7 @@ core/config.py
 
 Responsibility:
     - Centralizes application configuration and constants.
-    - Stores file paths for the persisted models (`MODEL_PATH`, `CODEBOOK_PATH`, `SCALER_PATH`).
+    - Stores file paths for the persisted models (`MODEL_PATH`).
     - Uses pathlib for robust path handling.
 """
 
@@ -17,59 +17,40 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 MODELS_DIR = BASE_DIR / "models"
 
 # Artifact Paths
+# Deep Learning Model (Keras/TensorFlow)
+MODEL_PATH = MODELS_DIR / "car_brand_model.h5"
+CLASS_INDICES_PATH = MODELS_DIR / "class_indices.json"
+
+# Legacy Paths (Kept briefly to avoid immediate import errors, but will be phased out)
 CODEBOOK_PATH = MODELS_DIR / "vocabulary.pkl"
 SCALER_PATH = MODELS_DIR / "scaler.pkl"
 SVM_PATH = MODELS_DIR / "classifier.joblib"
 
 
-# Model Configuration
-# Ensure these match strictly with what was used in training
-NUM_CLUSTERS = 500
-
 # Domain Class Definitions
-CLASS_LABELS_CARS = [
-    'hyundai', 'lexus', 'mazda', 'mercedes', 'opel', 'skoda', 'toyota', 'volkswagen', 'background'
+# WE ARE FOCUSING ONLY ON CARS NOW
+CLASS_LABELS = [
+    'hyundai', 'lexus', 'mazda', 'mercedes', 'opel', 'skoda', 'toyota', 'volkswagen'
 ]
 
-CLASS_LABELS_FASHION = [
-    'gucci', 'louis vuitton', 'chanel', 'prada', 'nike', 'adidas', 'zara', 'h&m'
-]
-
-CLASS_LABELS_LALIGA = [
-    'real madrid', 'barcelona', 'atletico madrid', 'valencia', 'sevilla', 'betis'
-]
-
-CLASS_LABELS_TECH = [
-    'apple', 'google', 'microsoft', 'amazon', 'tesla', 'samsung', 'sega'
-]
-
-CLASS_LABELS_FOOD = [
-    'mcdonalds', 'burger king', 'kfc', 'starbucks', 'subway', 'pizza hut', 'dominos'
-]
-
-# Default for backward compatibility if imported directly
-CLASS_LABELS = CLASS_LABELS_CARS
-
-# Domain Configuration for ModelManager
+# For backward compatibility / safety, we treat "cars" as the only domain
 DOMAINS = {
-    "cars": CLASS_LABELS_CARS,
-    "fashion": CLASS_LABELS_FASHION,
-    "laliga": CLASS_LABELS_LALIGA,
-    "tech": CLASS_LABELS_TECH,
-    "food": CLASS_LABELS_FOOD
+    "cars": CLASS_LABELS
 }
+
+# Image Configuration
+IMG_SIZE = (224, 224)
+BATCH_SIZE = 32
 
 # Metrics Directory
 METRICS_DIR = BASE_DIR / "static" / "metrics"
 
-def get_model_paths(domain):
+def get_model_paths(domain="cars"):
     """
-    Returns the paths for a specific domain's models.
+    Returns the paths for the Deep Learning model.
+    Domain argument is deprecated but kept for signature compatibility.
     """
-    domain_model_dir = MODELS_DIR / domain
     return {
-        "kmeans": domain_model_dir / "kmeans.pkl",
-        "scaler": domain_model_dir / "scaler.pkl",
-        "svm": domain_model_dir / "svm.pkl",
-        "classes": domain_model_dir / "classes.pkl"
+        "model": MODEL_PATH,
+        "classes": CLASS_INDICES_PATH
     }

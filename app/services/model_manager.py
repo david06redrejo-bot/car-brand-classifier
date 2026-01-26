@@ -2,69 +2,48 @@
 app/services/model_manager.py
 
 Responsibility:
-    - Manages lazy loading of domain-specific models.
-    - Implements LRU-like behavior to free memory.
+    - Singleton class to manage the lifecycle of the Deep Learning model.
+    - Loads the model on startup.
+    - Provides access to the model for the application.
 """
 
-import joblib
-import threading
-from core.config import get_model_paths, DOMAINS
+import os
+import sys
+from core.dl_loader import load_trained_model
 
 class ModelManager:
     _instance = None
-    _lock = threading.Lock()
-    
+    _model = None
+    _classes = None
+
     def __new__(cls):
         if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super(ModelManager, cls).__new__(cls)
-                    cls._instance.loaded_models = {} # {domain: {kmeans, scaler, svm}}
-                    cls._instance.active_domain = None
+            cls._instance = super(ModelManager, cls).__new__(cls)
+            cls._instance.load_model()
         return cls._instance
 
-    def load_domain(self, domain):
+    def load_model(self):
         """
-        Loads models for the specified domain. 
-        Unloads previous domain to save RAM (MVP approach: keep only 1 active).
+        Loads the Keras model and class indices.
         """
-        if domain not in DOMAINS:
-            raise ValueError(f"Invalid domain: {domain}")
-            
-        if self.active_domain == domain and domain in self.loaded_models:
-            return self.loaded_models[domain]
-            
-        with self._lock:
-            # Check again inside lock
-            if self.active_domain == domain and domain in self.loaded_models:
-                return self.loaded_models[domain]
-                
-            print(f"Loading models for domain: {domain}...")
-            
-            # Unload previous to be safe on RAM
-            if self.active_domain and self.active_domain != domain:
-                print(f"Unloading domain: {self.active_domain}")
-                self.loaded_models.pop(self.active_domain, None)
-            
-            paths = get_model_paths(domain)
-            
-            try:
-                models = {
-                    "kmeans": joblib.load(paths['kmeans']),
-                    "scaler": joblib.load(paths['scaler']),
-                    "svm": joblib.load(paths['svm']),
-                    "classes": joblib.load(paths['classes'])
-                }
-                self.loaded_models[domain] = models
-                self.active_domain = domain
-                print(f"Models for {domain} loaded successfully.")
-                return models
-            except FileNotFoundError:
-                print(f"Models for {domain} not found at {paths}.")
-                return None
-            except Exception as e:
-                print(f"Error loading models for {domain}: {e}")
-                return None
+        print("ModelManager: Loading Deep Learning Model...")
+        self._model, self._classes = load_trained_model()
+        
+        if self._model:
+            print(f"ModelManager: Model loaded successfully. Classes: {list(self._classes.keys())[:5]}...")
+        else:
+            print("ModelManager: Failed to load model.")
 
-    def get_models(self, domain):
-        return self.load_domain(domain)
+    def get_model(self):
+        """
+        Returns the loaded model and class indices.
+        """
+        if self._model is None:
+            # Try reloading if not loaded
+            self.load_model()
+            
+        return self._model, self._classes
+
+    # Legacy method signature for compatibility during refactor, but essentially just returns the single model
+    def load_domain(self, domain="cars"):
+        return self.get_model()
